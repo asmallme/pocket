@@ -1,5 +1,12 @@
 export type ContentType = "link" | "text" | "image" | "video";
 
+export type BookmarkSource =
+  | "web"
+  | "extension"
+  | "contextmenu"
+  | "shortcut"
+  | "pwa-share";
+
 export interface Profile {
   id: string;
   username: string;
@@ -19,6 +26,7 @@ export interface Bookmark {
   content_type: ContentType;
   note: string | null;
   is_public: boolean;
+  source: BookmarkSource;
   like_count: number;
   comment_count: number;
   created_at: string;
@@ -54,4 +62,5 @@ export interface CreateBookmarkInput {
   content_type: ContentType;
   note?: string | null;
   is_public: boolean;
+  source?: BookmarkSource;
 }

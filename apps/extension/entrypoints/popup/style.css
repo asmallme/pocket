@@ -120,6 +120,33 @@ textarea:focus {
   cursor: default;
 }
 
+.secondary {
+  width: 100%;
+  padding: 9px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  background: #fff;
+  color: #171717;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 12px;
+}
+
+.hint.small {
+  font-size: 11px;
+  margin-top: -6px;
+}
+
 .link {
   border: none;
   background: none;

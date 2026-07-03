@@ -49,7 +49,7 @@ export function UserMenu({ profile }: { profile: Profile }) {
         <DropdownMenuItem asChild>
           <Link href="/settings">
             <Settings className="size-4" />
-            编辑资料
+            个人中心
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />

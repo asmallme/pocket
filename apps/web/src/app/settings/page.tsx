@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SettingsForm } from "./settings-form";
 
-export const metadata = { title: "编辑资料" };
+export const metadata = { title: "个人中心" };
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -20,8 +20,12 @@ export default async function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-md">
-      <h1 className="mb-6 text-xl font-semibold">编辑资料</h1>
-      <SettingsForm profile={profile} />
+      <h1 className="mb-6 text-xl font-semibold">个人中心</h1>
+      <SettingsForm
+        profile={profile}
+        email={user.email ?? ""}
+        createdAt={user.created_at}
+      />
     </div>
   );
 }

@@ -115,6 +115,7 @@ export function SaveForm({
           content_type: mode,
           note: note.trim() || null,
           is_public: isPublic,
+          source: "web",
         })
         .select("id")
         .single();

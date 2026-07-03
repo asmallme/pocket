@@ -10,6 +10,15 @@
 - 浏览器插件一键收藏当前页面
 - 移动端 PWA + 剪贴板链接识别，快捷收藏
 
+### v1.1
+
+- 插件右键菜单：收藏页面 / 选中文字 / 图片 / 链接，快捷键 Cmd/Ctrl+Shift+S
+- 站点适配抓取：X、微信公众号、知乎、B站 帖子级内容提取
+- 网页授权登录：插件一键复用网页登录（`/extension-auth`，需配置
+  `SUPABASE_SERVICE_ROLE_KEY`）
+- 重复收藏检测、失败暂存重试、收藏来源统计（source 列）
+- 个人中心：头像上传、修改密码、账号信息
+
 ## 技术栈
 
 - **Web**：Next.js（App Router）+ Tailwind CSS + shadcn/ui

@@ -1,42 +1,30 @@
 import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabase";
+import { extractFromTab, type ExtractedPage } from "@/utils/extract";
+import { findExistingBookmark, flushSaveQueue } from "@/utils/save";
 
-interface PageInfo {
-  url: string;
-  title: string;
-  description: string | null;
-  image: string | null;
-}
-
-/** Runs inside the page to read Open Graph metadata. */
-function collectPageMeta() {
-  const meta = (key: string) =>
-    document
-      .querySelector<HTMLMetaElement>(
-        `meta[property="${key}"], meta[name="${key}"]`
-      )
-      ?.content?.trim() || null;
-  return {
-    description: meta("og:description") ?? meta("description"),
-    image: meta("og:image") ?? meta("twitter:image"),
-    ogTitle: meta("og:title"),
-  };
-}
+const WEB_URL = (import.meta.env.WXT_WEB_URL || "http://localhost:3000").replace(
+  /\/$/,
+  ""
+);
 
 export function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [page, setPage] = useState<PageInfo | null>(null);
+  const [page, setPage] = useState<ExtractedPage | null>(null);
+  const [existingId, setExistingId] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [isPublic, setIsPublic] = useState(true);
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [showEmailLogin, setShowEmailLogin] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setAuthChecked(true);
+      if (data.session) void flushSaveQueue();
     });
     const {
       data: { subscription },
@@ -50,35 +38,26 @@ export function App() {
         active: true,
         currentWindow: true,
       });
-      if (!tab?.url || !/^https?:\/\//.test(tab.url)) return;
-
-      const info: PageInfo = {
-        url: tab.url,
-        title: tab.title ?? tab.url,
-        description: null,
-        image: null,
-      };
-
-      try {
-        const [result] = await browser.scripting.executeScript({
-          target: { tabId: tab.id! },
-          func: collectPageMeta,
-        });
-        const meta = result?.result as ReturnType<typeof collectPageMeta>;
-        if (meta) {
-          info.description = meta.description;
-          info.image = meta.image;
-          if (meta.ogTitle) info.title = meta.ogTitle;
-        }
-      } catch {
-        // Restricted pages (chrome://, web store) don't allow injection.
-      }
-      setPage(info);
+      const extracted = await extractFromTab(tab ?? {});
+      setPage(extracted);
     }
     void loadPage();
   }, []);
 
-  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
+  // 登录后检测当前页是否已收藏过
+  useEffect(() => {
+    if (!session || !page?.url) return;
+    findExistingBookmark(page.url).then(setExistingId);
+  }, [session, page?.url]);
+
+  function handleWebLogin() {
+    void browser.tabs.create({
+      url: `${WEB_URL}/extension-auth?ext=${browser.runtime.id}`,
+    });
+    window.close();
+  }
+
+  async function handleEmailLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     const form = new FormData(e.currentTarget);
@@ -93,21 +72,27 @@ export function App() {
     if (!page || !session) return;
     setStatus("saving");
     setError(null);
-    const { error } = await supabase.from("bookmarks").insert({
-      user_id: session.user.id,
-      url: page.url,
-      title: page.title,
-      description: page.description,
-      cover_image: page.image,
-      content_type: "link",
-      note: note.trim() || null,
-      is_public: isPublic,
-    });
+    const { data, error } = await supabase
+      .from("bookmarks")
+      .insert({
+        user_id: session.user.id,
+        url: page.url,
+        title: page.title,
+        description: page.description,
+        cover_image: page.image,
+        content_type: "link",
+        note: note.trim() || null,
+        is_public: isPublic,
+        source: "extension",
+      })
+      .select("id")
+      .single();
     if (error) {
       setStatus("idle");
       setError("保存失败，请重试");
       return;
     }
+    setExistingId(data.id);
     setStatus("saved");
     setTimeout(() => window.close(), 900);
   }
@@ -119,14 +104,33 @@ export function App() {
       <div className="app">
         <h1 className="logo">Pocket</h1>
         <p className="hint">登录后即可一键收藏当前页面</p>
-        <form onSubmit={handleLogin} className="form">
-          <input name="email" type="email" placeholder="邮箱" required />
-          <input name="password" type="password" placeholder="密码" required />
-          {error && <p className="error">{error}</p>}
-          <button type="submit" className="primary">
-            登录
+
+        <button className="primary" onClick={handleWebLogin}>
+          使用网页账号登录
+        </button>
+        <p className="hint small">
+          将打开 Pocket 网站完成授权，网页已登录则一键完成
+        </p>
+
+        {showEmailLogin ? (
+          <form onSubmit={handleEmailLogin} className="form">
+            <input name="email" type="email" placeholder="邮箱" required />
+            <input
+              name="password"
+              type="password"
+              placeholder="密码"
+              required
+            />
+            {error && <p className="error">{error}</p>}
+            <button type="submit" className="secondary">
+              邮箱密码登录
+            </button>
+          </form>
+        ) : (
+          <button className="link" onClick={() => setShowEmailLogin(true)}>
+            用邮箱密码登录
           </button>
-        </form>
+        )}
       </div>
     );
   }
@@ -135,10 +139,7 @@ export function App() {
     <div className="app">
       <div className="topbar">
         <h1 className="logo">Pocket</h1>
-        <button
-          className="link"
-          onClick={() => void supabase.auth.signOut()}
-        >
+        <button className="link" onClick={() => void supabase.auth.signOut()}>
           退出
         </button>
       </div>
@@ -151,6 +152,20 @@ export function App() {
         </div>
       ) : (
         <p className="hint">当前页面无法收藏</p>
+      )}
+
+      {existingId && status !== "saved" && (
+        <div className="notice">
+          已收藏过这个页面
+          <button
+            className="link"
+            onClick={() =>
+              void browser.tabs.create({ url: `${WEB_URL}/b/${existingId}` })
+            }
+          >
+            查看
+          </button>
+        </div>
       )}
 
       <textarea
@@ -180,7 +195,9 @@ export function App() {
           ? "保存中..."
           : status === "saved"
             ? "已收藏 ✓"
-            : "收藏此页面"}
+            : existingId
+              ? "再收藏一次"
+              : "收藏此页面"}
       </button>
     </div>
   );
