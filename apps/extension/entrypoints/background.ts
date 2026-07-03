@@ -1,4 +1,6 @@
 import { extractFromTab } from "@/utils/extract";
+import { mergePageMeta } from "@/utils/page-meta";
+import { unfurlViaWeb } from "@/utils/unfurl";
 import { flushSaveQueue, saveBookmark, type SaveInput } from "@/utils/save";
 import { supabase } from "@/utils/supabase";
 
@@ -75,7 +77,7 @@ async function handleContextMenu(
     case MENU_PAGE:
       if (!page) break;
       input = {
-        ...page,
+        ...(await resolvePageMetaForSave(page)),
         content_type: "link",
         source: "contextmenu",
       };
@@ -105,7 +107,7 @@ async function handleContextMenu(
 
     case MENU_LINK: {
       if (!info.linkUrl) break;
-      const meta = await unfurlViaSupabase(info.linkUrl);
+      const meta = await unfurlViaWeb(info.linkUrl);
       input = {
         url: info.linkUrl,
         title: meta?.title ?? info.linkUrl,
@@ -127,40 +129,30 @@ async function savePageShortcut() {
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
   const page = await extractFromTab(tab ?? {});
   if (!page) return;
+  const enriched = await resolvePageMetaForSave(page);
   const result = await saveBookmark({
-    ...page,
+    ...enriched,
     content_type: "link",
     source: "shortcut",
   });
   await feedback(result.status, tab?.id);
 }
 
-/** 借用网站的 /api/unfurl 接口解析链接元数据（带用户 token）。 */
-async function unfurlViaSupabase(url: string) {
-  const webUrl = import.meta.env.WXT_WEB_URL;
-  if (!webUrl) return null;
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) return null;
-  try {
-    const res = await fetch(`${webUrl.replace(/\/$/, "")}/api/unfurl`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({ url }),
-    });
-    if (!res.ok) return null;
-    return (await res.json()) as {
-      title: string | null;
-      description: string | null;
-      image: string | null;
-    };
-  } catch {
-    return null;
-  }
+/** 收藏前用 unfurl 补全元数据（非 AI）。 */
+async function resolvePageMetaForSave(page: {
+  url: string;
+  title: string;
+  description: string | null;
+  image: string | null;
+}) {
+  const unfurled = await unfurlViaWeb(page.url);
+  const merged = mergePageMeta(page, unfurled);
+  return {
+    url: merged.url,
+    title: merged.title,
+    description: merged.description,
+    cover_image: merged.image,
+  };
 }
 
 /** 角标 + 系统通知反馈保存结果。 */

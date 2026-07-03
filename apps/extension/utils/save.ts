@@ -82,8 +82,8 @@ export async function saveBookmark(input: SaveInput): Promise<SaveResult> {
       const { attachTagsToBookmark } = await import("./tags");
       await attachTagsToBookmark(id, input.tags);
     }
-    const { enrichBookmark } = await import("./enrich");
-    void enrichBookmark(id);
+    // 入库后异步 AI  enrich，不阻塞收藏反馈
+    void import("./enrich").then(({ enrichBookmark }) => enrichBookmark(id));
     return { status: "saved", id };
   } catch {
     await enqueue(input);
@@ -113,7 +113,12 @@ export async function flushSaveQueue(): Promise<number> {
   let flushed = 0;
   for (const item of queue) {
     try {
-      await insertBookmark(session.user.id, item);
+      const id = await insertBookmark(session.user.id, item);
+      if (item.tags?.length) {
+        const { attachTagsToBookmark } = await import("./tags");
+        await attachTagsToBookmark(id, item.tags);
+      }
+      void import("./enrich").then(({ enrichBookmark }) => enrichBookmark(id));
       flushed++;
     } catch {
       remaining.push(item);

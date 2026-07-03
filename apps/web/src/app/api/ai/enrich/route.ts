@@ -40,10 +40,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "缺少 bookmark_id" }, { status: 400 });
   }
 
-  const [{ data: bookmark }, { data: profile }] = await Promise.all([
+  const [{ data: bookmark }, { data: profile }, { data: existingTags }] =
+    await Promise.all([
     supabase
       .from("bookmarks")
-      .select("id, user_id, title, description, note, url")
+      .select("id, user_id, title, description, note, url, ai_summary")
       .eq("id", bookmarkId)
       .single(),
     supabase
@@ -51,6 +52,10 @@ export async function POST(request: NextRequest) {
       .select("ai_summary_enabled, ai_auto_tag_enabled")
       .eq("id", user.id)
       .single(),
+    supabase
+      .from("bookmark_tags")
+      .select("tag_id")
+      .eq("bookmark_id", bookmarkId),
   ]);
 
   if (!bookmark || bookmark.user_id !== user.id) {
@@ -67,10 +72,12 @@ export async function POST(request: NextRequest) {
     url: bookmark.url,
   };
 
-  let summary: string | null = null;
+  let summary: string | null = bookmark.ai_summary ?? null;
   let tags: string[] = [];
 
-  if (profile?.ai_summary_enabled !== false) {
+  const hasTags = (existingTags ?? []).length > 0;
+
+  if (profile?.ai_summary_enabled !== false && !bookmark.ai_summary) {
     summary = await generateSummary(input);
     if (summary) {
       await supabase
@@ -80,7 +87,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  if (profile?.ai_auto_tag_enabled !== false) {
+  if (profile?.ai_auto_tag_enabled !== false && !hasTags) {
     tags = await suggestTags(input);
     if (tags.length > 0) {
       await attachTagsToBookmark(supabase, bookmarkId, tags);

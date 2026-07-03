@@ -5,7 +5,7 @@ const WEB_URL = (import.meta.env.WXT_WEB_URL || "http://localhost:3000").replace
   ""
 );
 
-/** 调用网站 API 为收藏生成 AI 摘要与标签。 */
+/** 收藏入库后在后台触发 AI 摘要与自动打标（不在打开 popup 时调用）。 */
 export async function enrichBookmark(bookmarkId: string): Promise<void> {
   const {
     data: { session },

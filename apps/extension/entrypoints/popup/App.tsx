@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabase";
 import { extractFromTab, type ExtractedPage } from "@/utils/extract";
-import { findExistingBookmark, flushSaveQueue } from "@/utils/save";
+import { mergePageMeta, sanitizeExtracted } from "@/utils/page-meta";
+import { unfurlViaWeb } from "@/utils/unfurl";
+import { findExistingBookmark, flushSaveQueue, saveBookmark } from "@/utils/save";
 import {
   avatarInitial,
   displayName,
@@ -20,6 +22,7 @@ export function App() {
   const [profile, setProfile] = useState<ExtensionProfile | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [page, setPage] = useState<ExtractedPage | null>(null);
+  const [pageLoading, setPageLoading] = useState(true);
   const [existingId, setExistingId] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [tagInput, setTagInput] = useState("");
@@ -51,12 +54,14 @@ export function App() {
 
   useEffect(() => {
     async function loadPage() {
+      setPageLoading(true);
       const [tab] = await browser.tabs.query({
         active: true,
         currentWindow: true,
       });
       const extracted = await extractFromTab(tab ?? {});
-      setPage(extracted);
+      setPage(extracted ? sanitizeExtracted(extracted) : null);
+      setPageLoading(false);
     }
     void loadPage();
   }, []);
@@ -105,35 +110,36 @@ export function App() {
       .map((t) => t.trim())
       .filter(Boolean)
       .slice(0, 5);
-    const { data, error } = await supabase
-      .from("bookmarks")
-      .insert({
-        user_id: session.user.id,
-        url: page.url,
-        title: page.title,
-        description: page.description,
-        cover_image: page.image,
-        content_type: "link",
-        note: note.trim() || null,
-        is_public: isPublic,
-        source: "extension",
-      })
-      .select("id")
-      .single();
-    if (error) {
-      setStatus("idle");
-      setError("保存失败，请重试");
+
+    // 收藏时再拉一次 unfurl 补全元数据；AI 摘要/打标由 saveBookmark 入库后在后台触发
+    const unfurled = await unfurlViaWeb(page.url);
+    const meta = mergePageMeta(page, unfurled);
+
+    const result = await saveBookmark({
+      url: meta.url,
+      title: meta.title,
+      description: meta.description,
+      cover_image: meta.image,
+      content_type: "link",
+      note: note.trim() || null,
+      is_public: isPublic,
+      source: "extension",
+      tags,
+    });
+
+    if (result.status === "saved" || result.status === "duplicate") {
+      setExistingId(result.id);
+      setSavedId(result.id);
+      setStatus("saved");
       return;
     }
-    if (tags.length > 0) {
-      const { attachTagsToBookmark } = await import("@/utils/tags");
-      await attachTagsToBookmark(data.id, tags);
+    if (result.status === "queued") {
+      setStatus("idle");
+      setError("已暂存，联网后自动重试");
+      return;
     }
-    const { enrichBookmark } = await import("@/utils/enrich");
-    void enrichBookmark(data.id);
-    setExistingId(data.id);
-    setSavedId(data.id);
-    setStatus("saved");
+    setStatus("idle");
+    setError("保存失败，请重试");
   }
 
   if (!authChecked) return <div className="app center">加载中...</div>;
@@ -223,11 +229,24 @@ export function App() {
         </div>
       </div>
 
-      {page ? (
+      {pageLoading ? (
+        <p className="hint">读取页面信息...</p>
+      ) : page ? (
         <div className="preview">
-          {page.image && <img src={page.image} alt="" className="cover" />}
-          <p className="title">{page.title}</p>
-          <p className="url">{new URL(page.url).hostname}</p>
+          <div className="preview-body">
+            {page.image ? (
+              <img src={page.image} alt="" className="preview-thumb" />
+            ) : (
+              <div className="preview-thumb preview-thumb-fallback" />
+            )}
+            <div className="preview-meta">
+              <p className="preview-title">{page.title}</p>
+              {page.description && (
+                <p className="preview-desc">{page.description}</p>
+              )}
+              <p className="preview-url">{new URL(page.url).hostname}</p>
+            </div>
+          </div>
         </div>
       ) : (
         <p className="hint">当前页面无法收藏</p>

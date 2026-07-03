@@ -27,6 +27,11 @@ export function extractPageData(): ExtractedPage {
     image: meta("og:image") ?? meta("twitter:image"),
   };
 
+  // 标题取首行，避免 meta 里塞入整页正文
+  if (result.title) {
+    result.title = result.title.split(/\r?\n/)[0].trim().slice(0, 120);
+  }
+
   const host = location.hostname;
 
   try {
@@ -118,6 +123,15 @@ export function extractPageData(): ExtractedPage {
         .querySelector(".article-summary, .summary")
         ?.textContent?.trim();
       if (summary) result.description = summary.slice(0, 300);
+    } else if (host.endsWith("deepseek.com")) {
+      const heading = document.querySelector("h1")?.textContent?.trim();
+      if (heading && heading.length < 120) result.title = heading;
+      if (
+        result.description &&
+        /(?:cache\s*hit|\$\s*\d|Input|Output)/i.test(result.description)
+      ) {
+        result.description = null;
+      }
     }
   } catch {
     // 适配器解析失败时保留通用提取结果

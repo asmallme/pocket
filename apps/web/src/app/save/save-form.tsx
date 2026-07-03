@@ -162,7 +162,7 @@ export function SaveForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bookmark_id: data.id }),
-      });
+      }); // 入库后后台 AI，不阻塞跳转
 
       toast.success("已收藏");
       router.push(`/b/${data.id}`);
