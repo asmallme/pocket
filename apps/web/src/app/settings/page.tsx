@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SettingsForm } from "./settings-form";
@@ -26,6 +27,17 @@ export default async function SettingsPage() {
         email={user.email ?? ""}
         createdAt={user.created_at}
       />
+      <div className="mt-8 flex items-center justify-center gap-4 border-t border-border/60 pt-4 text-xs text-muted-foreground">
+        <Link href="/about" className="hover:text-foreground hover:underline">
+          产品介绍
+        </Link>
+        <Link href="/terms" className="hover:text-foreground hover:underline">
+          用户协议
+        </Link>
+        <Link href="/privacy" className="hover:text-foreground hover:underline">
+          隐私政策
+        </Link>
+      </div>
     </div>
   );
 }

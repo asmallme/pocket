@@ -71,9 +71,14 @@ export async function Header() {
               <UserMenu profile={profile} />
             </>
           ) : (
-            <Button asChild size="sm" variant="outline" className="rounded-full">
-              <Link href="/login">登录</Link>
-            </Button>
+            <>
+              <Button asChild size="sm" variant="ghost" className="rounded-full">
+                <Link href="/about">介绍</Link>
+              </Button>
+              <Button asChild size="sm" variant="outline" className="rounded-full">
+                <Link href="/login">登录</Link>
+              </Button>
+            </>
           )}
         </div>
       </div>

@@ -294,13 +294,9 @@ const { data: searchRows } = await alice
   .or("title.ilike.%改过%,note.ilike.%改过%");
 check("收藏搜索命中", (searchRows ?? []).length >= 1);
 
-// --- 页面：/my 未登录重定向、找回密码页渲染 ---
+// --- 页面：/my 未登录重定向 ---
 const myRes = await fetch("http://localhost:3000/my");
 check("/my 未登录重定向到登录页", myRes.url.includes("/login"));
-
-const forgotRes = await fetch("http://localhost:3000/forgot-password");
-const forgotHtml = await forgotRes.text();
-check("找回密码页渲染", forgotRes.ok && forgotHtml.includes("找回密码"));
 
 const sitemapRes = await fetch("http://localhost:3000/sitemap.xml");
 check("sitemap.xml 可访问", sitemapRes.ok);

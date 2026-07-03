@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "收藏你在全网看到的好内容，分享给同样热爱阅读的人。",
     start_url: "/",
     display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#ffffff",
+    background_color: "#FAF8F5",
+    theme_color: "#FAF8F5",
     icons: [
       {
         src: "/icons/icon-192.png",

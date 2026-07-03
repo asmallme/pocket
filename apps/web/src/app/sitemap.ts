@@ -27,6 +27,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     { url: SITE_URL, changeFrequency: "hourly", priority: 1 },
+    { url: `${SITE_URL}/about`, changeFrequency: "monthly", priority: 0.9 },
     ...(bookmarks ?? []).map((b) => ({
       url: `${SITE_URL}/b/${b.id}`,
       lastModified: b.created_at,
