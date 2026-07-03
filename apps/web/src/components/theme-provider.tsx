@@ -24,42 +24,49 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
+function isColorMode(value: string | null): value is ColorMode {
+  return value === "light" || value === "dark" || value === "system";
+}
+
+function getStoredThemeId() {
+  if (typeof window === "undefined") return DEFAULT_THEME_ID;
+  return localStorage.getItem(THEME_STORAGE_KEY) ?? DEFAULT_THEME_ID;
+}
+
+function getStoredMode(): ColorMode {
+  if (typeof window === "undefined") return "light";
+  const stored = localStorage.getItem(MODE_STORAGE_KEY);
+  return isColorMode(stored) ? stored : "light";
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [themeId, setThemeIdState] = useState(DEFAULT_THEME_ID);
-  const [mode, setModeState] = useState<ColorMode>("light");
-  const [ready, setReady] = useState(false);
+  const [themeId, setThemeIdState] = useState(getStoredThemeId);
+  const [mode, setModeState] = useState<ColorMode>(getStoredMode);
 
   const apply = useCallback((id: string, m: ColorMode) => {
     applyTheme(id, m);
   }, []);
 
   useEffect(() => {
-    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY) ?? DEFAULT_THEME_ID;
-    const storedMode = (localStorage.getItem(MODE_STORAGE_KEY) as ColorMode) ?? "light";
-    setThemeIdState(storedTheme);
-    setModeState(storedMode);
-    apply(storedTheme, storedMode);
-    setReady(true);
-  }, [apply]);
+    apply(themeId, mode);
+  }, [themeId, mode, apply]);
 
   useEffect(() => {
-    if (!ready || mode !== "system") return;
+    if (mode !== "system") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = () => apply(themeId, "system");
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
-  }, [ready, themeId, mode, apply]);
+  }, [themeId, mode, apply]);
 
   function setThemeId(id: string) {
     setThemeIdState(id);
     localStorage.setItem(THEME_STORAGE_KEY, id);
-    apply(id, mode);
   }
 
   function setMode(m: ColorMode) {
     setModeState(m);
     localStorage.setItem(MODE_STORAGE_KEY, m);
-    apply(themeId, m);
   }
 
   return (

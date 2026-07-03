@@ -54,7 +54,8 @@ Pocket 的社区部分刻意做得「慢」：
 | --- | --- |
 | **Web** | 完整的收藏管理、信息流、标签系统、个人主页；支持「纸墨」等多套主题 |
 | **浏览器插件** | Chrome / Edge / Firefox，一键收藏 + 网页授权登录（无需重复输密码） |
-| **移动端 PWA** | 可安装到主屏，支持系统分享菜单收藏 |
+| **移动端 PWA** | 可安装到主屏，Android 支持系统分享菜单收藏 |
+| **iOS 快捷指令** | Safari / X App / 多数 iOS App 可通过系统分享面板保存到 Pocket（在个人中心配置） |
 
 ## 技术栈
 
@@ -101,7 +102,7 @@ pnpm dev
 | 变量 | 用途 |
 | --- | --- |
 | `DEEPSEEK_API_KEY` | AI 摘要与自动标签 |
-| `SUPABASE_SERVICE_ROLE_KEY` | 插件网页授权登录（`/extension-auth`） |
+| `SUPABASE_SERVICE_ROLE_KEY` | 插件网页授权登录（`/extension-auth`）与 iOS 快捷指令保存 |
 
 ### 浏览器插件
 

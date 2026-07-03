@@ -70,8 +70,8 @@ const platforms = [
   },
   {
     icon: Smartphone,
-    name: "移动端 PWA",
-    desc: "可安装到主屏，支持系统分享菜单收藏",
+    name: "移动端",
+    desc: "PWA 可安装到主屏；iOS 在个人中心配置快捷指令，从 Safari / X App 分享收藏",
   },
 ] as const;
 

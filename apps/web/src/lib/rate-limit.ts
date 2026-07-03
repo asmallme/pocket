@@ -10,7 +10,8 @@ export type RateLimitRoute =
   | "ai/suggest"
   | "unfurl"
   | "feed"
-  | "extension-token";
+  | "extension-token"
+  | "mobile-share";
 
 type RouteRateLimitConfig = {
   /** 已登录用户（按 uid） */
@@ -50,6 +51,12 @@ export const API_RATE_LIMITS: Record<RateLimitRoute, RouteRateLimitConfig> = {
     rules: [
       { limit: 5, windowMs: 60_000 },
       { limit: 20, windowMs: 3_600_000 },
+    ],
+  },
+  "mobile-share": {
+    rules: [
+      { limit: 30, windowMs: 60_000 },
+      { limit: 240, windowMs: 3_600_000 },
     ],
   },
 };

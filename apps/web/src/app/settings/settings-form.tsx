@@ -18,16 +18,24 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { ThemePicker } from "@/components/theme-picker";
+import {
+  MobileShareTokenCard,
+  type MobileShareTokenInfo,
+} from "@/components/mobile-share-token-card";
 import type { Profile } from "@pocket/shared";
 
 export function SettingsForm({
   profile,
   email,
   createdAt,
+  mobileShareToken,
+  focusIosShortcut = false,
 }: {
   profile: Profile;
   email: string;
   createdAt: string;
+  mobileShareToken: MobileShareTokenInfo | null;
+  focusIosShortcut?: boolean;
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -297,6 +305,11 @@ export function SettingsForm({
           </div>
         </CardContent>
       </Card>
+
+      <MobileShareTokenCard
+        initialToken={mobileShareToken}
+        autoFocus={focusIosShortcut}
+      />
 
       {/* 修改密码 */}
       <Card>

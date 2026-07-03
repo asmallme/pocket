@@ -38,15 +38,16 @@ WXT_WEB_URL=https://<生产域名>
 
 ### 1.3 Supabase 数据库 Migration
 
-本地共 5 个 migration，**生产必须全部应用**，尤其 v1.3：
+本地共 6 个 migration，**生产必须全部应用**，尤其 v1.3 与 iOS 快捷指令：
 
 | Migration | 内容 | 完成 |
 |-----------|------|------|
 | `20260703000001_init.sql` | 基础表、RLS、Storage | [ ] |
 | `20260703000002_v1_1.sql` | source 列等 | [ ] |
-| `20260703000003_v1_2.sql` | 举报、下架 removed_at | [ ] |
+| `20260703000003_v1_2.sql` | v1.2 补充表结构与策略 | [ ] |
 | `20260703000004_read_later.sql` | 稍后读 read_at | [ ] |
 | `20260703000005_v1_3.sql` | 标签、订阅、星标、AI 字段、安静模式 | [ ] |
+| `20260703000006_ios_shortcuts.sql` | iOS 快捷指令分享 Token | [ ] |
 
 ```bash
 supabase link
@@ -88,30 +89,7 @@ Dashboard → **Authentication → URL Configuration**：
 品牌素材与 OAuth 控制台文案见 `docs/oauth-branding.md`；
 产品 icon 已应用到网站 favicon、PWA manifest 和插件（`docs/brand/` 为原始素材）。
 
-### 2.2 内容审核流程
-
-当前能力：
-
-- 用户可举报（`reports` 表）
-- 下架通过 `removed_at`，**仅 service_role 可修改**（作者不能自行恢复）
-- **无管理后台**，需人工在 Supabase 操作
-
-| 项 | 完成 |
-|----|------|
-| 制定人工审核 SOP（查看举报 → 下架） | [ ] |
-| 或：实现简单内部 admin 页面 / 脚本 | [ ] |
-
-常用 SQL 参考：
-
-```sql
--- 待处理举报
-select * from reports where status = 'pending' order by created_at desc;
-
--- 下架违规收藏
-update bookmarks set removed_at = now() where id = '<bookmark-id>';
-```
-
-### 2.3 API 滥用防护
+### 2.2 API 滥用防护
 
 已按 **uid**（未登录 feed 按 IP）对各接口做滑动窗口限流，配置见 `apps/web/src/lib/rate-limit.ts`：
 
@@ -122,35 +100,36 @@ update bookmarks set removed_at = now() where id = '<bookmark-id>';
 | `/api/unfurl` | 40 次/分钟，300 次/小时 | [x] |
 | `/api/feed` | 120 次/分钟（匿名 60 次/分钟） | [x] |
 | `/api/extension-token` | 5 次/分钟，20 次/小时 | [x] |
+| `/api/mobile-share` | 30 次/分钟，240 次/小时 | [x] |
 
 超限返回 `429`，响应头含 `Retry-After`、`X-RateLimit-*`。
 
-本地验证：`node --import tsx scripts/rate-limit-check.mjs`
+本地验证：`npx tsx scripts/rate-limit-check.mjs`
 
 > 当前为进程内内存计数，适合单实例 / 本地。多实例 Serverless 部署时建议接入 Upstash Redis 等共享存储。
 
-### 2.4 设计预览页
+### 2.3 设计预览页
 
-`/design-preview` 仍在生产路由中。
+`/design-preview` 仅开发环境可访问，生产环境返回 404。
 
 | 项 | 完成 |
 |----|------|
-| 限制仅开发环境可访问，或从生产移除 | [ ] |
-| `robots.txt` disallow `/design-preview` | [ ] |
+| 限制仅开发环境可访问，或从生产移除 | [x] |
+| `robots.txt` disallow `/design-preview` | [x] |
 
-### 2.5 测试与 CI
+### 2.4 测试与 CI
 
 | 项 | 完成 |
 |----|------|
 | 跑通 `node scripts/e2e-check.mjs`（需本地 Supabase + `pnpm dev`） | [ ] |
 | 手动冒烟 v1.3：标签、订阅、AI enrich、主题切换 | [ ] |
-| 配置 CI：PR 时 `pnpm build` + `pnpm lint` | [ ] |
+| 配置 CI：PR 时 Web lint + Web build + 插件 build | [x] |
 
-### 2.6 文档
+### 2.5 文档
 
 | 项 | 完成 |
 |----|------|
-| 更新 `README.md`（v1.3、主题、DeepSeek、部署步骤） | [ ] |
+| 更新 `README.md`（v1.3、主题、DeepSeek、部署步骤） | [x] |
 
 ---
 
@@ -160,9 +139,10 @@ update bookmarks set removed_at = now() where id = '<bookmark-id>';
 |------|--------|------|
 | GitHub / Google 登录 | Supabase Dashboard → Providers 配置 Client ID / Secret | [ ] |
 | 插件右键 / 快捷键 | 重新 build 并加载或发布新版 | [ ] |
-| PWA 系统分享 | HTTPS 下 `manifest` share_target → `/save` | [ ] |
+| PWA 系统分享 | `manifest` share_target 已实现；HTTPS 下手动确认 | [ ] |
+| iOS 快捷指令分享 | 个人中心内生成 Token 并查看完整配置步骤 | [ ] |
 | AI 摘要 / 打标 | Vercel 配 `DEEPSEEK_API_KEY`；用户可在设置关闭 | [ ] |
-| 主题（纸墨默认 + 三套可选） | 存 localStorage，换设备不同步（已知限制） | [ ] |
+| 主题（纸墨默认 + 三套可选） | 存 localStorage，换设备不同步（已知限制） | [x] |
 | SEO | `NEXT_PUBLIC_SITE_URL` 正确，否则 sitemap / OG 指向错误 | [ ] |
 
 ---
@@ -189,8 +169,7 @@ update bookmarks set removed_at = now() where id = '<bookmark-id>';
 3. Supabase 配置 Auth URL（无需 SMTP，已去除邮件重置）
 4. 部署 Web → 手动冒烟
 5. 插件生产 build → 自测 → Chrome Web Store（需隐私政策）
-6. 补隐私政策 / 用户协议页 + 审核 SOP
-7. API 限流 + CI（可与上线并行）
+6. API 限流 + CI（已补齐，上线前复跑）
 ```
 
 ---
@@ -216,7 +195,6 @@ update bookmarks set removed_at = now() where id = '<bookmark-id>';
 - [ ] `/my` 筛选、搜索、星标、批量管理
 - [ ] 随机未读 / 温故知新
 - [ ] 安静模式、主题切换（设置 → 外观主题）
-- [ ] 举报一条内容 → Supabase `reports` 有记录
 
 ### 插件
 
@@ -229,6 +207,7 @@ update bookmarks set removed_at = now() where id = '<bookmark-id>';
 - [ ] 底栏导航（发现 / 我的 / 收藏 / 标签）
 - [ ] PWA 添加到主屏幕
 - [ ] 系统分享到 Pocket（share target）
+- [ ] iOS 快捷指令：Safari / X App 分享链接或文本到 Pocket
 
 ---
 
@@ -244,4 +223,4 @@ update bookmarks set removed_at = now() where id = '<bookmark-id>';
 
 ---
 
-*最后更新：去除忘记密码 / 邮件重置流程后修订。*
+*最后更新：加入 iOS 快捷指令收藏能力。*
