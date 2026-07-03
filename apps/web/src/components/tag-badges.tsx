@@ -8,7 +8,7 @@ export function TagBadges({ tags }: { tags: Tag[] }) {
     <div className="flex flex-wrap gap-1.5">
       {tags.map((tag) => (
         <Link key={tag.id} href={`/tags/${tag.slug}`}>
-          <Badge variant="secondary" className="font-normal hover:bg-secondary/80">
+          <Badge variant="secondary" className="h-6 px-2 text-[11px] font-normal hover:bg-secondary/80">
             #{tag.name}
           </Badge>
         </Link>

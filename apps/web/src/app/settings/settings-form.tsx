@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { ThemePicker } from "@/components/theme-picker";
 import type { Profile } from "@pocket/shared";
 
 export function SettingsForm({
@@ -226,6 +227,18 @@ export function SettingsForm({
               {saving ? "保存中..." : "保存"}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">外观主题</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="mb-4 text-xs text-muted-foreground">
+            默认「纸墨」配色，可切换晨雾、静夜、苔绿等主题，并支持浅色 / 深色 / 跟随系统。
+          </p>
+          <ThemePicker />
         </CardContent>
       </Card>
 

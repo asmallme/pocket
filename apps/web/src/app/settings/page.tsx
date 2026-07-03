@@ -19,7 +19,7 @@ export default async function SettingsPage() {
   if (!profile) redirect("/login");
 
   return (
-    <div className="mx-auto max-w-md">
+    <div className="mx-auto max-w-lg">
       <h1 className="mb-6 text-xl font-semibold">个人中心</h1>
       <SettingsForm
         profile={profile}

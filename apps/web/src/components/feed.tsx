@@ -69,7 +69,7 @@ export function Feed({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2.5 md:space-y-3">
       {items.map((bookmark) => (
         <BookmarkCard
           key={bookmark.id}

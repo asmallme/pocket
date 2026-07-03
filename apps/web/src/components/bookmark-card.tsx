@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { Globe, Lock, MessageCircle, Sparkles, Star } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card } from "@/components/ui/card";
 import { LikeButton } from "@/components/like-button";
 import { ReadToggle } from "@/components/read-toggle";
 import { TagBadges } from "@/components/tag-badges";
 import { formatRelativeTime, hostnameOf } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import type { BookmarkWithAuthor } from "@pocket/shared";
 
 export function BookmarkCard({
@@ -23,48 +23,53 @@ export function BookmarkCard({
   const authorName = bookmark.author.display_name ?? bookmark.author.username;
 
   return (
-    <Card className="gap-3 p-4 transition-shadow hover:shadow-md">
-      <div className="flex items-center gap-2 text-sm">
+    <article
+      className={cn(
+        "group rounded-[var(--radius)] border border-border/80 bg-card p-3 transition-colors",
+        "hover:border-border hover:bg-card/80 md:p-3.5"
+      )}
+    >
+      <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
         <Link
           href={`/u/${bookmark.author.username}`}
-          className="flex items-center gap-2 font-medium hover:underline"
+          className="flex min-w-0 items-center gap-1.5 font-medium text-foreground hover:underline"
         >
-          <Avatar className="size-6">
+          <Avatar className="size-5">
             <AvatarImage src={bookmark.author.avatar_url ?? undefined} />
-            <AvatarFallback className="text-xs">
+            <AvatarFallback className="text-[10px]">
               {authorName.slice(0, 1).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          {authorName}
+          <span className="truncate">{authorName}</span>
         </Link>
-        <span className="text-muted-foreground">
-          · {formatRelativeTime(bookmark.created_at)}
-        </span>
+        <span className="shrink-0">· {formatRelativeTime(bookmark.created_at)}</span>
         {bookmark.is_starred && (
-          <Star className="size-3.5 fill-amber-400 text-amber-400" />
+          <Star className="size-3 shrink-0 fill-amber-400 text-amber-400" />
         )}
         {!bookmark.is_public && (
-          <Lock className="size-3.5 text-muted-foreground" />
+          <Lock className="size-3 shrink-0" />
         )}
+        <Link
+          href={`/b/${bookmark.id}`}
+          className="ml-auto shrink-0 text-[11px] opacity-0 transition-opacity group-hover:opacity-100"
+        >
+          详情
+        </Link>
       </div>
 
       {bookmark.note && (
-        <blockquote className="border-l-2 border-primary/40 pl-3 text-[15px] font-medium leading-relaxed text-foreground">
+        <blockquote className="font-quote mb-2.5 rounded-r-[calc(var(--radius)-2px)] border-l-[3px] border-quote bg-quote-bg py-1.5 pl-3 pr-2 text-[15px] font-medium leading-snug text-foreground">
           {bookmark.note}
         </blockquote>
       )}
 
       {bookmark.ai_summary && (
-        <p className="flex gap-1.5 text-sm leading-relaxed text-muted-foreground">
-          <Sparkles className="mt-0.5 size-3.5 shrink-0 text-primary/70" />
-          <span className="line-clamp-3 whitespace-pre-line">
+        <p className="mb-2.5 flex gap-1.5 text-xs leading-relaxed text-ai">
+          <Sparkles className="mt-0.5 size-3.5 shrink-0 opacity-70" />
+          <span className="line-clamp-2 whitespace-pre-line">
             {bookmark.ai_summary}
           </span>
         </p>
-      )}
-
-      {bookmark.tags && bookmark.tags.length > 0 && (
-        <TagBadges tags={bookmark.tags} />
       )}
 
       {bookmark.content_type === "link" && bookmark.url && (
@@ -72,10 +77,10 @@ export function BookmarkCard({
           href={bookmark.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="group flex gap-3 rounded-lg border bg-muted/30 p-3 transition-colors hover:bg-muted/60"
+          className="mb-2 flex gap-2.5 rounded-[calc(var(--radius)-2px)] border border-border/60 bg-muted/40 p-2.5 transition-colors hover:bg-muted/70"
         >
           {bookmark.cover_image && (
-            <div className="size-16 shrink-0 overflow-hidden rounded-md bg-muted">
+            <div className="size-14 shrink-0 overflow-hidden rounded-md bg-muted md:size-16">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={bookmark.cover_image}
@@ -86,7 +91,7 @@ export function BookmarkCard({
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="line-clamp-2 text-sm font-medium group-hover:underline">
+            <p className="line-clamp-2 text-sm font-medium leading-snug group-hover:underline">
               {bookmark.title ?? bookmark.url}
             </p>
             {bookmark.description && !bookmark.ai_summary && (
@@ -95,7 +100,7 @@ export function BookmarkCard({
               </p>
             )}
             {host && (
-              <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+              <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
                 <Globe className="size-3" />
                 {host}
               </p>
@@ -105,19 +110,25 @@ export function BookmarkCard({
       )}
 
       {bookmark.content_type === "image" && bookmark.cover_image && (
-        <div className="overflow-hidden rounded-lg border">
+        <div className="mb-2 overflow-hidden rounded-[calc(var(--radius)-2px)] border border-border/60">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={bookmark.cover_image}
             alt={bookmark.title ?? ""}
-            className="max-h-96 w-full object-cover"
+            className="max-h-72 w-full object-cover md:max-h-80"
             loading="lazy"
           />
         </div>
       )}
 
+      {bookmark.tags && bookmark.tags.length > 0 && (
+        <div className="mb-2">
+          <TagBadges tags={bookmark.tags} />
+        </div>
+      )}
+
       {!quietMode && (
-        <div className="flex items-center gap-1 text-muted-foreground">
+        <div className="flex items-center gap-0.5 border-t border-border/50 pt-2 text-muted-foreground">
           <LikeButton
             bookmarkId={bookmark.id}
             initialCount={bookmark.like_count}
@@ -125,9 +136,9 @@ export function BookmarkCard({
           />
           <Link
             href={`/b/${bookmark.id}`}
-            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors hover:bg-accent hover:text-foreground"
+            className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs transition-colors hover:bg-accent hover:text-foreground"
           >
-            <MessageCircle className="size-4" />
+            <MessageCircle className="size-3.5" />
             {bookmark.comment_count > 0 && bookmark.comment_count}
           </Link>
           {ownerControls && (
@@ -139,10 +150,10 @@ export function BookmarkCard({
       )}
 
       {quietMode && ownerControls && (
-        <div className="flex justify-end">
+        <div className="flex justify-end border-t border-border/50 pt-2">
           <ReadToggle bookmarkId={bookmark.id} readAt={bookmark.read_at} />
         </div>
       )}
-    </Card>
+    </article>
   );
 }

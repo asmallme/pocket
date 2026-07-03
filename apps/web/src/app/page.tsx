@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { fetchFeed } from "@/lib/feed";
 import { fetchPopularTags } from "@/lib/tag-service";
 import { Feed } from "@/components/feed";
+import { HomeFeed } from "@/components/home-feed";
 import { ClipboardDetector } from "@/components/clipboard-detector";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
 export const dynamic = "force-dynamic";
@@ -26,30 +27,38 @@ export default async function HomePage({
     viewerId: user?.id ?? null,
   });
 
-  const popularTags = await fetchPopularTags(supabase, 12);
+  const popularTags = await fetchPopularTags(supabase, 16);
 
   if (!user) {
     return (
-      <div className="space-y-6">
-        <div className="rounded-xl border bg-muted/30 p-6 text-center">
-          <h1 className="text-lg font-semibold">收藏你在全网看到的好内容</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            一键收藏、随时回顾，也能发现别人正在读什么。
-            <Link href="/login" className="ml-1 text-primary underline">
+      <div className="space-y-4">
+        <section className="rounded-[var(--radius)] border border-border/80 bg-card px-5 py-6 md:py-7">
+          <h1 className="font-quote text-xl font-semibold leading-snug md:text-2xl">
+            收藏你在全网看到的好内容
+          </h1>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            一键收藏、金句策展、标签订阅——在安静的信息流里，快速判断什么值得读。
+            <Link href="/login" className="ml-1 font-medium text-primary underline-offset-2 hover:underline">
               立即加入
             </Link>
           </p>
-        </div>
+        </section>
         {popularTags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
+          <div className="scrollbar-none -mx-4 flex gap-1.5 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
             {popularTags.map((t) => (
               <Link key={t.id} href={`/?tag=${t.slug}`}>
-                <Badge variant="outline">#{t.name}</Badge>
+                <Badge variant="secondary" className="shrink-0 font-normal">
+                  #{t.name}
+                </Badge>
               </Link>
             ))}
           </div>
         )}
-        <Feed scope={tagSlug ? "tag" : "global"} initialPage={globalPage} tagSlug={tagSlug} />
+        <Feed
+          scope={tagSlug ? "tag" : "global"}
+          initialPage={globalPage}
+          tagSlug={tagSlug}
+        />
       </div>
     );
   }
@@ -62,57 +71,15 @@ export default async function HomePage({
   return (
     <>
       <ClipboardDetector />
-      {popularTags.length > 0 && (
-        <div className="mb-4 flex flex-wrap gap-2">
-          <Link href="/">
-            <Badge variant={!tagSlug ? "default" : "outline"}>全部</Badge>
-          </Link>
-          {popularTags.map((t) => (
-            <Link key={t.id} href={`/?tag=${t.slug}`}>
-              <Badge variant={tagSlug === t.slug ? "default" : "outline"}>
-                #{t.name}
-              </Badge>
-            </Link>
-          ))}
-          <Link href="/tags">
-            <Badge variant="secondary">更多标签</Badge>
-          </Link>
-        </div>
-      )}
-      <Tabs defaultValue={tagSlug ? "global" : "global"}>
-        <TabsList className="mb-4 w-full">
-          <TabsTrigger value="global" className="flex-1">
-            发现
-          </TabsTrigger>
-          <TabsTrigger value="following" className="flex-1">
-            关注
-          </TabsTrigger>
-          <TabsTrigger value="tags" className="flex-1">
-            标签订阅
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="global">
-          <Feed
-            scope={tagSlug ? "tag" : "global"}
-            initialPage={globalPage}
-            tagSlug={tagSlug}
-          />
-        </TabsContent>
-        <TabsContent value="following">
-          <Feed
-            scope="following"
-            initialPage={followingPage}
-            emptyMessage="关注一些人，这里会出现他们的收藏"
-          />
-        </TabsContent>
-        <TabsContent value="tags">
-          <Feed
-            scope="subscribed_tags"
-            initialPage={tagsPage}
-            emptyMessage="去标签页订阅感兴趣的主题"
-          />
-        </TabsContent>
-      </Tabs>
+      <Suspense fallback={<div className="py-12 text-center text-sm text-muted-foreground">加载中...</div>}>
+        <HomeFeed
+          tagSlug={tagSlug}
+          popularTags={popularTags}
+          globalPage={globalPage}
+          followingPage={followingPage}
+          tagsPage={tagsPage}
+        />
+      </Suspense>
     </>
   );
 }
