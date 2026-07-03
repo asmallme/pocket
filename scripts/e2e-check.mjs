@@ -208,5 +208,167 @@ const detailHtml = await (
 ).text();
 check("详情页包含收藏与评论内容", detailHtml.includes("一篇好文章") && detailHtml.includes("写得真好"));
 
+// ============ v1.2 ============
+const SERVICE_ROLE =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU";
+const admin = createClient(URL, SERVICE_ROLE, {
+  auth: { persistSession: false, autoRefreshToken: false },
+});
+
+// --- SEO: 详情页 OG 标签 ---
+check(
+  "详情页含 OG 标签",
+  detailHtml.includes('property="og:title"'),
+  ""
+);
+
+// --- 举报 ---
+const { error: reportErr } = await bob.from("reports").insert({
+  bookmark_id: pubBookmark.id,
+  reporter_id: bobAuth.user.id,
+  reason: "测试举报",
+});
+check("B 提交举报", !reportErr, reportErr?.message);
+
+const { error: dupReportErr } = await bob.from("reports").insert({
+  bookmark_id: pubBookmark.id,
+  reporter_id: bobAuth.user.id,
+  reason: "重复举报",
+});
+check("重复举报被拒绝", !!dupReportErr);
+
+// --- 举报仅本人可见 ---
+const { data: aliceSeesReports } = await alice.from("reports").select("id");
+check("举报对他人不可见", (aliceSeesReports ?? []).length === 0);
+
+// --- 编辑收藏 ---
+const { error: editErr } = await alice
+  .from("bookmarks")
+  .update({ title: "改过的标题", is_public: false })
+  .eq("id", pubBookmark.id);
+const { data: edited } = await alice
+  .from("bookmarks")
+  .select("title, is_public")
+  .eq("id", pubBookmark.id)
+  .single();
+check(
+  "编辑标题与公开性",
+  !editErr && edited?.title === "改过的标题" && edited?.is_public === false
+);
+// 改回公开，供后续下架测试
+await alice.from("bookmarks").update({ is_public: true }).eq("id", pubBookmark.id);
+
+// --- 下架机制 ---
+const { error: removeErr } = await admin
+  .from("bookmarks")
+  .update({ removed_at: new Date().toISOString() })
+  .eq("id", pubBookmark.id);
+check("管理端可下架", !removeErr, removeErr?.message);
+
+const { data: anonAfterRemove } = await anon
+  .from("bookmarks")
+  .select("id")
+  .eq("id", pubBookmark.id);
+check("下架后匿名不可见", (anonAfterRemove ?? []).length === 0);
+
+const { data: ownerAfterRemove } = await alice
+  .from("bookmarks")
+  .select("id, removed_at")
+  .eq("id", pubBookmark.id);
+check(
+  "下架后作者仍可见",
+  ownerAfterRemove?.length === 1 && !!ownerAfterRemove[0].removed_at
+);
+
+const { error: clearErr } = await alice
+  .from("bookmarks")
+  .update({ removed_at: null })
+  .eq("id", pubBookmark.id);
+check("作者不能自行解除下架", !!clearErr, clearErr?.message?.slice(0, 50));
+
+// --- 我的收藏搜索（数据层验证 ilike） ---
+const { data: searchRows } = await alice
+  .from("bookmarks")
+  .select("id")
+  .eq("user_id", aliceAuth.user.id)
+  .or("title.ilike.%改过%,note.ilike.%改过%");
+check("收藏搜索命中", (searchRows ?? []).length >= 1);
+
+// --- 页面：/my 未登录重定向、找回密码页渲染 ---
+const myRes = await fetch("http://localhost:3000/my");
+check("/my 未登录重定向到登录页", myRes.url.includes("/login"));
+
+const forgotRes = await fetch("http://localhost:3000/forgot-password");
+const forgotHtml = await forgotRes.text();
+check("找回密码页渲染", forgotRes.ok && forgotHtml.includes("找回密码"));
+
+const sitemapRes = await fetch("http://localhost:3000/sitemap.xml");
+check("sitemap.xml 可访问", sitemapRes.ok);
+
+// ============ v1.2 第二档 ============
+
+// --- 稍后读：新收藏默认未读，可标记已读再改回 ---
+const { data: freshBookmark } = await alice
+  .from("bookmarks")
+  .select("read_at")
+  .eq("id", privBookmark.id)
+  .single();
+check("新收藏默认未读", freshBookmark?.read_at === null);
+
+await alice
+  .from("bookmarks")
+  .update({ read_at: new Date().toISOString() })
+  .eq("id", privBookmark.id);
+const { data: afterRead } = await alice
+  .from("bookmarks")
+  .select("read_at")
+  .eq("id", privBookmark.id)
+  .single();
+check("标记已读", !!afterRead?.read_at);
+
+const { data: unreadList } = await alice
+  .from("bookmarks")
+  .select("id")
+  .eq("user_id", aliceAuth.user.id)
+  .is("read_at", null);
+check(
+  "稍后读队列不含已读",
+  (unreadList ?? []).every((b) => b.id !== privBookmark.id)
+);
+
+// --- 粉丝/关注列表页 ---
+const connRes = await fetch(
+  `http://localhost:3000/u/alice_${suffix}/connections?tab=followers`
+);
+const connHtml = await connRes.text();
+check(
+  "粉丝列表页含关注者",
+  connRes.ok && connHtml.includes(`bob_${suffix}`),
+  `status=${connRes.status}`
+);
+
+const followingRes = await fetch(
+  `http://localhost:3000/u/bob_${suffix}/connections?tab=following`
+);
+const followingHtml = await followingRes.text();
+check(
+  "关注列表页含被关注者",
+  followingRes.ok && followingHtml.includes(`alice_${suffix}`)
+);
+
+// --- OAuth 回调与登录页按钮 ---
+const cbRes = await fetch("http://localhost:3000/auth/callback", {
+  redirect: "manual",
+});
+check(
+  "OAuth 回调无 code 时重定向登录页",
+  cbRes.status >= 300 &&
+    cbRes.status < 400 &&
+    (cbRes.headers.get("location") ?? "").includes("/login")
+);
+
+const loginHtml = await (await fetch("http://localhost:3000/login")).text();
+check("登录页含 OAuth 按钮", loginHtml.includes("GitHub"));
+
 console.log(failures === 0 ? "\n全部通过 ✓" : `\n${failures} 项失败 ✗`);
 process.exit(failures === 0 ? 0 : 1);

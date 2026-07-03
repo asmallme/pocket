@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
@@ -21,6 +22,54 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/";
   const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<string | null>(null);
+
+  async function handleOAuth(provider: "github" | "google") {
+    setOauthLoading(provider);
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      },
+    });
+    if (error) {
+      setOauthLoading(null);
+      toast.error(
+        error.message.includes("not enabled")
+          ? "该登录方式暂未开通"
+          : "登录失败：" + error.message
+      );
+    }
+  }
+
+  const oauthButtons = (
+    <div className="space-y-2">
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        disabled={oauthLoading !== null}
+        onClick={() => handleOAuth("github")}
+      >
+        {oauthLoading === "github" ? "跳转中..." : "使用 GitHub 登录"}
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        disabled={oauthLoading !== null}
+        onClick={() => handleOAuth("google")}
+      >
+        {oauthLoading === "google" ? "跳转中..." : "使用 Google 登录"}
+      </Button>
+      <div className="flex items-center gap-3 py-1">
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-xs text-muted-foreground">或使用邮箱</span>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+    </div>
+  );
 
   async function handleLogin(formData: FormData) {
     setLoading(true);
@@ -78,7 +127,8 @@ export function LoginForm() {
             <CardTitle>欢迎回来</CardTitle>
             <CardDescription>登录后继续收藏与分享</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {oauthButtons}
             <form action={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="login-email">邮箱</Label>
@@ -91,7 +141,15 @@ export function LoginForm() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="login-password">密码</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="login-password">密码</Label>
+                  <Link
+                    href="/forgot-password"
+                    className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+                  >
+                    忘记密码？
+                  </Link>
+                </div>
                 <Input
                   id="login-password"
                   name="password"
@@ -114,7 +172,8 @@ export function LoginForm() {
             <CardTitle>创建账号</CardTitle>
             <CardDescription>开始收集你的第一条收藏</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {oauthButtons}
             <form action={handleSignup} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="signup-username">用户名</Label>

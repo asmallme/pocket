@@ -29,6 +29,17 @@ export interface Bookmark {
   source: BookmarkSource;
   like_count: number;
   comment_count: number;
+  removed_at: string | null;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface Report {
+  id: string;
+  bookmark_id: string;
+  reporter_id: string;
+  reason: string;
+  status: "pending" | "resolved" | "dismissed";
   created_at: string;
 }
 

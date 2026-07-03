@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogOut, Settings, User } from "lucide-react";
+import { Bookmark, LogOut, Settings, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -44,6 +44,12 @@ export function UserMenu({ profile }: { profile: Profile }) {
           <Link href={`/u/${profile.username}`}>
             <User className="size-4" />
             我的主页
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/my">
+            <Bookmark className="size-4" />
+            我的收藏
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>

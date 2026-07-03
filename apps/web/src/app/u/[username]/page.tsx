@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { fetchFeed } from "@/lib/feed";
@@ -5,6 +7,35 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BookmarkCard } from "@/components/bookmark-card";
 import { FollowButton } from "@/components/follow-button";
 import type { Profile } from "@pocket/shared";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}): Promise<Metadata> {
+  const { username } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("username, display_name, bio, avatar_url")
+    .eq("username", username)
+    .maybeSingle();
+
+  if (!data) return { title: "用户" };
+
+  const name = data.display_name ?? data.username;
+  const description = data.bio ?? `${name} 在 Pocket 上的收藏`;
+  return {
+    title: `${name} (@${data.username})`,
+    description,
+    openGraph: {
+      title: `${name} (@${data.username})`,
+      description,
+      type: "profile",
+      images: data.avatar_url ? [{ url: data.avatar_url }] : undefined,
+    },
+  };
+}
 
 export default async function UserPage({
   params,
@@ -72,14 +103,25 @@ export default async function UserPage({
           <p className="text-sm text-muted-foreground">@{profile.username}</p>
           {profile.bio && <p className="mt-1.5 text-sm">{profile.bio}</p>}
           <p className="mt-1.5 text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">
-              {followerCount ?? 0}
-            </span>{" "}
-            粉丝 ·{" "}
-            <span className="font-medium text-foreground">
-              {followingCount ?? 0}
-            </span>{" "}
-            关注
+            <Link
+              href={`/u/${profile.username}/connections?tab=followers`}
+              className="hover:underline"
+            >
+              <span className="font-medium text-foreground">
+                {followerCount ?? 0}
+              </span>{" "}
+              粉丝
+            </Link>
+            {" · "}
+            <Link
+              href={`/u/${profile.username}/connections?tab=following`}
+              className="hover:underline"
+            >
+              <span className="font-medium text-foreground">
+                {followingCount ?? 0}
+              </span>{" "}
+              关注
+            </Link>
           </p>
         </div>
         {!isSelf && (

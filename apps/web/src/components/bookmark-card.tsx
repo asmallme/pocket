@@ -3,15 +3,19 @@ import { Globe, Lock, MessageCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { LikeButton } from "@/components/like-button";
+import { ReadToggle } from "@/components/read-toggle";
 import { formatRelativeTime, hostnameOf } from "@/lib/format";
 import type { BookmarkWithAuthor } from "@pocket/shared";
 
 export function BookmarkCard({
   bookmark,
   likedByViewer,
+  ownerControls = false,
 }: {
   bookmark: BookmarkWithAuthor;
   likedByViewer?: boolean;
+  /** 自己的收藏列表中展示稍后读切换 */
+  ownerControls?: boolean;
 }) {
   const host = hostnameOf(bookmark.url);
   const authorName = bookmark.author.display_name ?? bookmark.author.username;
@@ -107,6 +111,11 @@ export function BookmarkCard({
           <MessageCircle className="size-4" />
           {bookmark.comment_count > 0 && bookmark.comment_count}
         </Link>
+        {ownerControls && (
+          <span className="ml-auto">
+            <ReadToggle bookmarkId={bookmark.id} readAt={bookmark.read_at} />
+          </span>
+        )}
       </div>
     </Card>
   );
