@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { BookmarkCard } from "@/components/bookmark-card";
+import { useQuietMode } from "@/components/quiet-mode";
 import type { FeedPage } from "@/lib/feed";
 import type { BookmarkWithAuthor } from "@pocket/shared";
 
@@ -10,11 +11,14 @@ export function Feed({
   scope,
   initialPage,
   emptyMessage = "还没有内容",
+  tagSlug,
 }: {
-  scope: "global" | "following";
+  scope: "global" | "following" | "tag" | "subscribed_tags";
   initialPage: FeedPage;
   emptyMessage?: string;
+  tagSlug?: string;
 }) {
+  const quietMode = useQuietMode();
   const [items, setItems] = useState<BookmarkWithAuthor[]>(initialPage.items);
   const [likedIds, setLikedIds] = useState<Set<string>>(
     new Set(initialPage.likedIds)
@@ -27,9 +31,9 @@ export function Feed({
     if (!cursor || loading) return;
     setLoading(true);
     try {
-      const res = await fetch(
-        `/api/feed?scope=${scope}&cursor=${encodeURIComponent(cursor)}`
-      );
+      const qs = new URLSearchParams({ scope, cursor });
+      if (tagSlug) qs.set("tag", tagSlug);
+      const res = await fetch(`/api/feed?${qs}`);
       if (!res.ok) return;
       const page: FeedPage = await res.json();
       setItems((prev) => {
@@ -41,7 +45,7 @@ export function Feed({
     } finally {
       setLoading(false);
     }
-  }, [cursor, loading, scope]);
+  }, [cursor, loading, scope, tagSlug]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -71,6 +75,7 @@ export function Feed({
           key={bookmark.id}
           bookmark={bookmark}
           likedByViewer={likedIds.has(bookmark.id)}
+          quietMode={quietMode}
         />
       ))}
       <div ref={sentinelRef} className="flex justify-center py-4">

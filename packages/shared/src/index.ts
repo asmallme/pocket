@@ -7,12 +7,22 @@ export type BookmarkSource =
   | "shortcut"
   | "pwa-share";
 
+export interface Tag {
+  id: string;
+  name: string;
+  slug: string;
+  created_at?: string;
+}
+
 export interface Profile {
   id: string;
   username: string;
   display_name: string | null;
   avatar_url: string | null;
   bio: string | null;
+  quiet_mode: boolean;
+  ai_summary_enabled: boolean;
+  ai_auto_tag_enabled: boolean;
   created_at: string;
 }
 
@@ -31,6 +41,8 @@ export interface Bookmark {
   comment_count: number;
   removed_at: string | null;
   read_at: string | null;
+  ai_summary: string | null;
+  is_starred: boolean;
   created_at: string;
 }
 
@@ -46,6 +58,7 @@ export interface Report {
 /** Bookmark row joined with its author profile, as returned by feed queries. */
 export interface BookmarkWithAuthor extends Bookmark {
   author: Pick<Profile, "id" | "username" | "display_name" | "avatar_url">;
+  tags?: Tag[];
 }
 
 export interface Comment {
@@ -74,4 +87,10 @@ export interface CreateBookmarkInput {
   note?: string | null;
   is_public: boolean;
   source?: BookmarkSource;
+  tag_names?: string[];
+}
+
+export interface AiEnrichResult {
+  summary: string | null;
+  tags: string[];
 }

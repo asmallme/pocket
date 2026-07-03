@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { Header } from "@/components/header";
+import { AppProviders } from "@/components/app-providers";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import "./globals.css";
 
@@ -45,10 +46,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background`}
       >
-        <Header />
-        <main className="mx-auto w-full max-w-2xl px-4 pb-24 pt-6">
-          {children}
-        </main>
+        <AppProviders>
+          <Header />
+          <main className="mx-auto w-full max-w-2xl px-4 pb-24 pt-6">
+            {children}
+          </main>
+        </AppProviders>
         <Toaster position="top-center" />
         <ServiceWorkerRegister />
       </body>

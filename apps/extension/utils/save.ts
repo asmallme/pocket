@@ -9,6 +9,7 @@ export interface SaveInput {
   note?: string | null;
   is_public?: boolean;
   source: "extension" | "contextmenu" | "shortcut";
+  tags?: string[];
 }
 
 export type SaveResult =
@@ -77,6 +78,12 @@ export async function saveBookmark(input: SaveInput): Promise<SaveResult> {
 
   try {
     const id = await insertBookmark(session.user.id, input);
+    if (input.tags?.length) {
+      const { attachTagsToBookmark } = await import("./tags");
+      await attachTagsToBookmark(id, input.tags);
+    }
+    const { enrichBookmark } = await import("./enrich");
+    void enrichBookmark(id);
     return { status: "saved", id };
   } catch {
     await enqueue(input);

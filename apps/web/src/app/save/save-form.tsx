@@ -13,6 +13,8 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TagInput } from "@/components/tag-input";
+import { attachTagsToBookmark } from "@/lib/tag-service";
 import type { UnfurlResult } from "@pocket/shared";
 
 type Mode = "link" | "text" | "image";
@@ -21,10 +23,14 @@ export function SaveForm({
   userId,
   initialUrl = "",
   initialTitle = "",
+  initialNote = "",
+  fromShare = false,
 }: {
   userId: string;
   initialUrl?: string;
   initialTitle?: string;
+  initialNote?: string;
+  fromShare?: boolean;
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("link");
@@ -32,7 +38,10 @@ export function SaveForm({
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState("");
   const [coverImage, setCoverImage] = useState<string | null>(null);
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(initialNote);
+  const [tags, setTags] = useState<string[]>([]);
+  const [aiPreview, setAiPreview] = useState<string | null>(null);
+  const [suggesting, setSuggesting] = useState(false);
   const [isPublic, setIsPublic] = useState(true);
   const [unfurling, setUnfurling] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -72,6 +81,30 @@ export function SaveForm({
     setImageFile(file);
     if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImagePreview(file ? URL.createObjectURL(file) : null);
+  }
+
+  async function handleAiSuggest() {
+    setSuggesting(true);
+    try {
+      const res = await fetch("/api/ai/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: title || null,
+          description: description || null,
+          note: note || null,
+          url: mode === "link" ? url : null,
+        }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.tags?.length) {
+        setTags((prev) => [...new Set([...prev, ...data.tags])].slice(0, 5));
+      }
+      if (data.summary) setAiPreview(data.summary);
+    } finally {
+      setSuggesting(false);
+    }
   }
 
   async function handleSubmit() {
@@ -115,11 +148,21 @@ export function SaveForm({
           content_type: mode,
           note: note.trim() || null,
           is_public: isPublic,
-          source: "web",
+          source: fromShare ? "pwa-share" : "web",
         })
         .select("id")
         .single();
       if (error) throw error;
+
+      if (tags.length > 0) {
+        await attachTagsToBookmark(supabase, data.id, tags);
+      }
+
+      void fetch("/api/ai/enrich", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookmark_id: data.id }),
+      });
 
       toast.success("已收藏");
       router.push(`/b/${data.id}`);
@@ -259,7 +302,7 @@ export function SaveForm({
 
       <div className="space-y-2">
         <Label htmlFor="note">
-          {mode === "text" ? "内容" : "推荐语（可选）"}
+          {mode === "text" ? "内容" : "推荐语 / 金句"}
         </Label>
         <Textarea
           id="note"
@@ -267,12 +310,35 @@ export function SaveForm({
           onChange={(e) => setNote(e.target.value)}
           rows={mode === "text" ? 6 : 3}
           maxLength={5000}
+          className={mode !== "text" ? "border-primary/30 font-medium" : ""}
           placeholder={
             mode === "text"
               ? "写点什么..."
-              : "为什么值得收藏？写一句推荐语让更多人看到"
+              : "为什么值得收藏？写下你的判断或划词金句"
           }
         />
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label>标签</Label>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs"
+            disabled={suggesting}
+            onClick={() => void handleAiSuggest()}
+          >
+            {suggesting ? "AI 建议中..." : "AI 建议标签"}
+          </Button>
+        </div>
+        <TagInput value={tags} onChange={setTags} />
+        {aiPreview && (
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            AI 摘要预览：{aiPreview}
+          </p>
+        )}
       </div>
 
       <div className="flex items-center justify-between rounded-lg border p-4">

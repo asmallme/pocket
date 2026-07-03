@@ -17,37 +17,87 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import type { Bookmark } from "@pocket/shared";
+import { TagInput } from "@/components/tag-input";
+import { replaceBookmarkTags } from "@/lib/tag-service";
+import type { Bookmark, Tag } from "@pocket/shared";
 
-export function EditBookmarkDialog({ bookmark }: { bookmark: Bookmark }) {
+function fieldText(formData: FormData, name: string): string | null {
+  const value = formData.get(name);
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed || null;
+}
+
+export function EditBookmarkDialog({
+  bookmark,
+}: {
+  bookmark: Bookmark & { tags?: Tag[] };
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPublic, setIsPublic] = useState(bookmark.is_public);
+  const [isStarred, setIsStarred] = useState(bookmark.is_starred);
+  const [tags, setTags] = useState<string[]>(
+    (bookmark.tags ?? []).map((t) => t.name)
+  );
   const [saving, setSaving] = useState(false);
 
-  async function handleSubmit(formData: FormData) {
-    setSaving(true);
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("bookmarks")
-      .update({
-        title: (formData.get("title") as string).trim() || null,
-        note: (formData.get("note") as string).trim() || null,
-        is_public: isPublic,
-      })
-      .eq("id", bookmark.id);
-    setSaving(false);
-    if (error) {
-      toast.error("保存失败，请重试");
-      return;
+  function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (next) {
+      setIsPublic(bookmark.is_public);
+      setIsStarred(bookmark.is_starred);
+      setTags((bookmark.tags ?? []).map((t) => t.name));
     }
-    toast.success("已更新");
-    setOpen(false);
-    router.refresh();
+  }
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      const formData = new FormData(e.currentTarget);
+      const updates: {
+        note: string | null;
+        is_public: boolean;
+        is_starred: boolean;
+        title?: string | null;
+      } = {
+        note: fieldText(formData, "note"),
+        is_public: isPublic,
+        is_starred: isStarred,
+      };
+      if (bookmark.content_type !== "text") {
+        updates.title = fieldText(formData, "title");
+      }
+
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("bookmarks")
+        .update(updates)
+        .eq("id", bookmark.id);
+
+      if (error) {
+        toast.error("保存失败：" + error.message);
+        return;
+      }
+
+      await replaceBookmarkTags(supabase, bookmark.id, tags);
+
+      toast.success("已更新");
+      setOpen(false);
+      router.refresh();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "保存失败，请重试"
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm" className="gap-1.5">
           <Pencil className="size-4" />
@@ -58,13 +108,14 @@ export function EditBookmarkDialog({ bookmark }: { bookmark: Bookmark }) {
         <DialogHeader>
           <DialogTitle>编辑收藏</DialogTitle>
         </DialogHeader>
-        <form action={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {bookmark.content_type !== "text" && (
             <div className="space-y-2">
               <Label htmlFor="edit-title">标题</Label>
               <Input
                 id="edit-title"
                 name="title"
+                key={`title-${bookmark.id}-${bookmark.title}`}
                 defaultValue={bookmark.title ?? ""}
                 maxLength={300}
               />
@@ -77,10 +128,24 @@ export function EditBookmarkDialog({ bookmark }: { bookmark: Bookmark }) {
             <Textarea
               id="edit-note"
               name="note"
+              key={`note-${bookmark.id}-${bookmark.note}`}
               defaultValue={bookmark.note ?? ""}
               rows={bookmark.content_type === "text" ? 6 : 3}
               maxLength={5000}
             />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div>
+              <p className="text-sm font-medium">星标收藏</p>
+              <p className="text-xs text-muted-foreground">
+                标记你认为高价值的内容
+              </p>
+            </div>
+            <Switch checked={isStarred} onCheckedChange={setIsStarred} />
+          </div>
+          <div className="space-y-2">
+            <Label>标签</Label>
+            <TagInput value={tags} onChange={setTags} />
           </div>
           <div className="flex items-center justify-between rounded-lg border p-3">
             <div>

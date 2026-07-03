@@ -7,7 +7,7 @@ export const metadata = { title: "收藏" };
 export default async function SavePage({
   searchParams,
 }: {
-  searchParams: Promise<{ url?: string; title?: string }>;
+  searchParams: Promise<{ url?: string; title?: string; text?: string }>;
 }) {
   const supabase = await createClient();
   const {
@@ -24,6 +24,8 @@ export default async function SavePage({
         userId={user.id}
         initialUrl={params.url ?? ""}
         initialTitle={params.title ?? ""}
+        initialNote={params.text ?? ""}
+        fromShare={!!(params.url || params.text)}
       />
     </div>
   );

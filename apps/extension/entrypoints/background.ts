@@ -182,6 +182,13 @@ async function feedback(
     void browser.action.setBadgeText({ text: "", tabId });
   }, 2500);
 
+  if (status === "saved") {
+    await browser.action.setTitle({ title: "Pocket · 已收藏", tabId });
+    setTimeout(() => {
+      void browser.action.setTitle({ title: "Pocket 收藏", tabId });
+    }, 2000);
+  }
+
   const messages: Record<string, string | null> = {
     saved: null, // 角标已足够
     duplicate: "这个链接已经收藏过了",

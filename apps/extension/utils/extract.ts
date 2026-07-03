@@ -93,6 +93,31 @@ export function extractPageData(): ExtractedPage {
           ? `UP主：${up} · ${result.description}`
           : `UP主：${up}`;
       }
+    } else if (host === "news.ycombinator.com") {
+      const title = document
+        .querySelector(".titleline > a, .storylink")
+        ?.textContent?.trim();
+      if (title) result.title = title;
+      const subtext = document.querySelector(".subtext")?.textContent?.trim();
+      if (subtext) result.description = subtext.slice(0, 300);
+    } else if (host === "www.reddit.com" || host === "reddit.com") {
+      const title = document
+        .querySelector("shreddit-post[post-title], h1")
+        ?.textContent?.trim();
+      if (title) result.title = title.slice(0, 120);
+      const post = document.querySelector(
+        '[data-test-id="post-content"]'
+      ) as HTMLElement | null;
+      if (post) result.description = post.innerText.trim().slice(0, 300);
+    } else if (host === "sspai.com" || host.endsWith(".sspai.com")) {
+      const title = document
+        .querySelector("h1.article-title, h1")
+        ?.textContent?.trim();
+      if (title) result.title = title;
+      const summary = document
+        .querySelector(".article-summary, .summary")
+        ?.textContent?.trim();
+      if (summary) result.description = summary.slice(0, 300);
     }
   } catch {
     // 适配器解析失败时保留通用提取结果

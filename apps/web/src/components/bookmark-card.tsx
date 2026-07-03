@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { Globe, Lock, MessageCircle } from "lucide-react";
+import { Globe, Lock, MessageCircle, Sparkles, Star } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { LikeButton } from "@/components/like-button";
 import { ReadToggle } from "@/components/read-toggle";
+import { TagBadges } from "@/components/tag-badges";
 import { formatRelativeTime, hostnameOf } from "@/lib/format";
 import type { BookmarkWithAuthor } from "@pocket/shared";
 
@@ -11,11 +12,12 @@ export function BookmarkCard({
   bookmark,
   likedByViewer,
   ownerControls = false,
+  quietMode = false,
 }: {
   bookmark: BookmarkWithAuthor;
   likedByViewer?: boolean;
-  /** 自己的收藏列表中展示稍后读切换 */
   ownerControls?: boolean;
+  quietMode?: boolean;
 }) {
   const host = hostnameOf(bookmark.url);
   const authorName = bookmark.author.display_name ?? bookmark.author.username;
@@ -38,15 +40,31 @@ export function BookmarkCard({
         <span className="text-muted-foreground">
           · {formatRelativeTime(bookmark.created_at)}
         </span>
+        {bookmark.is_starred && (
+          <Star className="size-3.5 fill-amber-400 text-amber-400" />
+        )}
         {!bookmark.is_public && (
           <Lock className="size-3.5 text-muted-foreground" />
         )}
       </div>
 
       {bookmark.note && (
-        <p className="whitespace-pre-wrap text-[15px] leading-relaxed">
+        <blockquote className="border-l-2 border-primary/40 pl-3 text-[15px] font-medium leading-relaxed text-foreground">
           {bookmark.note}
+        </blockquote>
+      )}
+
+      {bookmark.ai_summary && (
+        <p className="flex gap-1.5 text-sm leading-relaxed text-muted-foreground">
+          <Sparkles className="mt-0.5 size-3.5 shrink-0 text-primary/70" />
+          <span className="line-clamp-3 whitespace-pre-line">
+            {bookmark.ai_summary}
+          </span>
         </p>
+      )}
+
+      {bookmark.tags && bookmark.tags.length > 0 && (
+        <TagBadges tags={bookmark.tags} />
       )}
 
       {bookmark.content_type === "link" && bookmark.url && (
@@ -71,7 +89,7 @@ export function BookmarkCard({
             <p className="line-clamp-2 text-sm font-medium group-hover:underline">
               {bookmark.title ?? bookmark.url}
             </p>
-            {bookmark.description && (
+            {bookmark.description && !bookmark.ai_summary && (
               <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
                 {bookmark.description}
               </p>
@@ -98,25 +116,33 @@ export function BookmarkCard({
         </div>
       )}
 
-      <div className="flex items-center gap-1 text-muted-foreground">
-        <LikeButton
-          bookmarkId={bookmark.id}
-          initialCount={bookmark.like_count}
-          initialLiked={likedByViewer ?? false}
-        />
-        <Link
-          href={`/b/${bookmark.id}`}
-          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors hover:bg-accent hover:text-foreground"
-        >
-          <MessageCircle className="size-4" />
-          {bookmark.comment_count > 0 && bookmark.comment_count}
-        </Link>
-        {ownerControls && (
-          <span className="ml-auto">
-            <ReadToggle bookmarkId={bookmark.id} readAt={bookmark.read_at} />
-          </span>
-        )}
-      </div>
+      {!quietMode && (
+        <div className="flex items-center gap-1 text-muted-foreground">
+          <LikeButton
+            bookmarkId={bookmark.id}
+            initialCount={bookmark.like_count}
+            initialLiked={likedByViewer ?? false}
+          />
+          <Link
+            href={`/b/${bookmark.id}`}
+            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <MessageCircle className="size-4" />
+            {bookmark.comment_count > 0 && bookmark.comment_count}
+          </Link>
+          {ownerControls && (
+            <span className="ml-auto">
+              <ReadToggle bookmarkId={bookmark.id} readAt={bookmark.read_at} />
+            </span>
+          )}
+        </div>
+      )}
+
+      {quietMode && ownerControls && (
+        <div className="flex justify-end">
+          <ReadToggle bookmarkId={bookmark.id} readAt={bookmark.read_at} />
+        </div>
+      )}
     </Card>
   );
 }

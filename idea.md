@@ -69,3 +69,37 @@ v1.1版本优化todo
 11. OAuth 登录（Google/GitHub）：降低注册门槛，Supabase 配置即得
     （需在 Supabase Dashboard → Authentication → Providers 配置
     GitHub/Google 的 Client ID 和 Secret 后生效）
+
+## v1.3 策展与发现（基于 story.md，不含端内阅读/离线）
+
+LLM 能力由 DeepSeek 提供（环境变量 `DEEPSEEK_API_KEY`）。
+
+### 阅读者视角
+- [x] R1 标签订阅：关注 tag 后 feed 展示该标签下的公开收藏
+- [x] R2 Tag 发现页：热门标签列表 + 标签详情 feed
+- [x] R3 卡片策展强化：推荐语/金句置顶突出，弱化互动噪音
+- [x] R4 安静阅读模式：隐藏点赞数、评论入口、粉丝数（个人设置）
+- [x] R5 AI 三行摘要：卡片展示 DeepSeek 生成的价值摘要（可关）
+- [x] R6 发现流按 tag 筛选
+- [x] R7 策展人主页：展示常收藏的 tag
+- [x] R8 详情页相关收藏：同 tag 推荐
+
+### 收藏者视角
+- [x] C1 标签体系：手动多标签
+- [x] C2 AI 自动打标：入库时 DeepSeek 建议标签
+- [x] C3 采集强化观点：推荐语更醒目，划词预填金句
+- [x] C4 收藏时选 tag：网页 + 插件
+- [x] C5 我的收藏：按 tag 筛选组合
+- [x] C6 移动采集：PWA Share Target 增强（系统分享到 Pocket）
+- [x] C7 轻量防遗忘：随机未读、温故模块
+- [x] C8 高价值星标
+- [x] C9 批量管理：多选改 tag / 公开性 / 已读
+- [x] C10 插件轻反馈（已完成）
+- [x] C11 站点适配扩展：HN、Reddit、少数派
+
+### 基础设施
+- [x] X1 tags / bookmark_tags / tag_subscriptions 表与 RLS
+- [x] X2 Tag 命名规范（slug 去重）
+- [x] X3 用户偏好 quiet_mode、ai 开关
+- [x] X4 DeepSeek API 封装
+- [x] X5 站内未读稍后读提示（Header 铃铛）

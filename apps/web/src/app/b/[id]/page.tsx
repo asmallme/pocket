@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { fetchRelatedBookmarks, fetchTagsForBookmarks } from "@/lib/tag-service";
 import { BookmarkCard } from "@/components/bookmark-card";
 import { Comments } from "@/components/comments";
 import { DeleteBookmarkButton } from "@/components/delete-bookmark-button";
@@ -69,7 +70,7 @@ export default async function BookmarkDetailPage({
   const typed = bookmark as unknown as BookmarkWithAuthor;
   const isOwner = user?.id === typed.user_id;
 
-  const [{ data: comments }, likedRes] = await Promise.all([
+  const [{ data: comments }, likedRes, tagMap, related] = await Promise.all([
     supabase
       .from("comments")
       .select(
@@ -85,7 +86,14 @@ export default async function BookmarkDetailPage({
           .eq("user_id", user.id)
           .maybeSingle()
       : Promise.resolve({ data: null }),
+    fetchTagsForBookmarks(supabase, [id]),
+    fetchRelatedBookmarks(supabase, id),
   ]);
+
+  const typedWithTags = {
+    ...typed,
+    tags: tagMap.get(id) ?? [],
+  };
 
   return (
     <div className="space-y-6">
@@ -96,7 +104,7 @@ export default async function BookmarkDetailPage({
       )}
 
       <BookmarkCard
-        bookmark={typed}
+        bookmark={typedWithTags}
         likedByViewer={!!likedRes.data}
         ownerControls={isOwner}
       />
@@ -104,7 +112,7 @@ export default async function BookmarkDetailPage({
       <div className="flex justify-end gap-1">
         {isOwner ? (
           <>
-            <EditBookmarkDialog bookmark={typed} />
+            <EditBookmarkDialog bookmark={typedWithTags} />
             <DeleteBookmarkButton bookmarkId={id} />
           </>
         ) : (
@@ -117,6 +125,17 @@ export default async function BookmarkDetailPage({
         initialComments={(comments ?? []) as unknown as Comment[]}
         viewerId={user?.id ?? null}
       />
+
+      {related.length > 0 && (
+        <section className="space-y-3 border-t pt-6">
+          <h2 className="text-sm font-semibold text-muted-foreground">
+            相关收藏
+          </h2>
+          {related.map((item) => (
+            <BookmarkCard key={item.id} bookmark={item} />
+          ))}
+        </section>
+      )}
     </div>
   );
 }

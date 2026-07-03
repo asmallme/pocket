@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { Profile } from "@pocket/shared";
 
@@ -31,6 +32,10 @@ export function SettingsForm({
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
+  const [quietMode, setQuietMode] = useState(profile.quiet_mode);
+  const [aiSummary, setAiSummary] = useState(profile.ai_summary_enabled);
+  const [aiAutoTag, setAiAutoTag] = useState(profile.ai_auto_tag_enabled);
+  const [savingPrefs, setSavingPrefs] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const displayName = profile.display_name ?? profile.username;
@@ -115,6 +120,25 @@ export function SettingsForm({
       return;
     }
     toast.success("密码已修改");
+  }
+
+  async function savePreference(
+    key: "quiet_mode" | "ai_summary_enabled" | "ai_auto_tag_enabled",
+    value: boolean
+  ) {
+    setSavingPrefs(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("profiles")
+      .update({ [key]: value })
+      .eq("id", profile.id);
+    setSavingPrefs(false);
+    if (error) {
+      toast.error("保存失败");
+      return;
+    }
+    toast.success("偏好已更新");
+    router.refresh();
   }
 
   return (
@@ -202,6 +226,62 @@ export function SettingsForm({
               {saving ? "保存中..." : "保存"}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">阅读偏好</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div>
+              <p className="text-sm font-medium">安静阅读模式</p>
+              <p className="text-xs text-muted-foreground">
+                隐藏点赞数、评论入口和粉丝数
+              </p>
+            </div>
+            <Switch
+              checked={quietMode}
+              disabled={savingPrefs}
+              onCheckedChange={(v) => {
+                setQuietMode(v);
+                void savePreference("quiet_mode", v);
+              }}
+            />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div>
+              <p className="text-sm font-medium">AI 三行摘要</p>
+              <p className="text-xs text-muted-foreground">
+                收藏入库时由 DeepSeek 生成价值摘要
+              </p>
+            </div>
+            <Switch
+              checked={aiSummary}
+              disabled={savingPrefs}
+              onCheckedChange={(v) => {
+                setAiSummary(v);
+                void savePreference("ai_summary_enabled", v);
+              }}
+            />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div>
+              <p className="text-sm font-medium">AI 自动打标</p>
+              <p className="text-xs text-muted-foreground">
+                收藏入库时自动建议标签
+              </p>
+            </div>
+            <Switch
+              checked={aiAutoTag}
+              disabled={savingPrefs}
+              onCheckedChange={(v) => {
+                setAiAutoTag(v);
+                void savePreference("ai_auto_tag_enabled", v);
+              }}
+            />
+          </div>
         </CardContent>
       </Card>
 

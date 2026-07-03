@@ -3,6 +3,12 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabase";
 import { extractFromTab, type ExtractedPage } from "@/utils/extract";
 import { findExistingBookmark, flushSaveQueue } from "@/utils/save";
+import {
+  avatarInitial,
+  displayName,
+  fetchProfile,
+  type ExtensionProfile,
+} from "@/utils/profile";
 
 const WEB_URL = (import.meta.env.WXT_WEB_URL || "http://localhost:3000").replace(
   /\/$/,
@@ -11,12 +17,15 @@ const WEB_URL = (import.meta.env.WXT_WEB_URL || "http://localhost:3000").replace
 
 export function App() {
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<ExtensionProfile | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [page, setPage] = useState<ExtractedPage | null>(null);
   const [existingId, setExistingId] = useState<string | null>(null);
   const [note, setNote] = useState("");
+  const [tagInput, setTagInput] = useState("");
   const [isPublic, setIsPublic] = useState(true);
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [savedId, setSavedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showEmailLogin, setShowEmailLogin] = useState(false);
 
@@ -33,6 +42,14 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    if (!session) {
+      setProfile(null);
+      return;
+    }
+    void fetchProfile(session.user.id).then(setProfile);
+  }, [session]);
+
+  useEffect(() => {
     async function loadPage() {
       const [tab] = await browser.tabs.query({
         active: true,
@@ -44,11 +61,22 @@ export function App() {
     void loadPage();
   }, []);
 
-  // 登录后检测当前页是否已收藏过
   useEffect(() => {
     if (!session || !page?.url) return;
     findExistingBookmark(page.url).then(setExistingId);
   }, [session, page?.url]);
+
+  // 收藏成功后轻提示，稍晚自动关闭弹窗
+  useEffect(() => {
+    if (status !== "saved") return;
+    const timer = setTimeout(() => window.close(), 1400);
+    return () => clearTimeout(timer);
+  }, [status]);
+
+  function openSettings() {
+    void browser.tabs.create({ url: `${WEB_URL}/settings` });
+    window.close();
+  }
 
   function handleWebLogin() {
     void browser.tabs.create({
@@ -72,6 +100,11 @@ export function App() {
     if (!page || !session) return;
     setStatus("saving");
     setError(null);
+    const tags = tagInput
+      .split(/[,，\s]+/)
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .slice(0, 5);
     const { data, error } = await supabase
       .from("bookmarks")
       .insert({
@@ -92,9 +125,15 @@ export function App() {
       setError("保存失败，请重试");
       return;
     }
+    if (tags.length > 0) {
+      const { attachTagsToBookmark } = await import("@/utils/tags");
+      await attachTagsToBookmark(data.id, tags);
+    }
+    const { enrichBookmark } = await import("@/utils/enrich");
+    void enrichBookmark(data.id);
     setExistingId(data.id);
+    setSavedId(data.id);
     setStatus("saved");
-    setTimeout(() => window.close(), 900);
   }
 
   if (!authChecked) return <div className="app center">加载中...</div>;
@@ -135,13 +174,53 @@ export function App() {
     );
   }
 
+  const name = profile ? displayName(profile) : "…";
+
   return (
     <div className="app">
+      {status === "saved" && (
+        <div className="save-toast" role="status">
+          <span className="save-toast-text">已收藏</span>
+          {savedId && (
+            <button
+              type="button"
+              className="save-toast-link"
+              onClick={() =>
+                void browser.tabs.create({ url: `${WEB_URL}/b/${savedId}` })
+              }
+            >
+              查看
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="topbar">
         <h1 className="logo">Pocket</h1>
-        <button className="link" onClick={() => void supabase.auth.signOut()}>
-          退出
-        </button>
+        <div className="topbar-actions">
+          <button
+            type="button"
+            className="user-chip"
+            onClick={openSettings}
+            title="个人中心"
+          >
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="" className="user-avatar" />
+            ) : (
+              <span className="user-avatar user-avatar-fallback">
+                {profile ? avatarInitial(profile) : "?"}
+              </span>
+            )}
+            <span className="user-name">{name}</span>
+          </button>
+          <button
+            type="button"
+            className="link"
+            onClick={() => void supabase.auth.signOut()}
+          >
+            退出
+          </button>
+        </div>
       </div>
 
       {page ? (
@@ -158,6 +237,7 @@ export function App() {
         <div className="notice">
           已收藏过这个页面
           <button
+            type="button"
             className="link"
             onClick={() =>
               void browser.tabs.create({ url: `${WEB_URL}/b/${existingId}` })
@@ -171,8 +251,18 @@ export function App() {
       <textarea
         value={note}
         onChange={(e) => setNote(e.target.value)}
-        placeholder="写一句推荐语（可选）"
+        placeholder="写一句推荐语或金句（可选）"
         rows={3}
+        disabled={status === "saved"}
+      />
+
+      <input
+        type="text"
+        value={tagInput}
+        onChange={(e) => setTagInput(e.target.value)}
+        placeholder="标签，逗号分隔（可选）"
+        disabled={status === "saved"}
+        className="tag-input"
       />
 
       <label className="toggle">
@@ -180,6 +270,7 @@ export function App() {
           type="checkbox"
           checked={isPublic}
           onChange={(e) => setIsPublic(e.target.checked)}
+          disabled={status === "saved"}
         />
         公开这条收藏
       </label>
@@ -187,7 +278,7 @@ export function App() {
       {error && <p className="error">{error}</p>}
 
       <button
-        className="primary"
+        className={`primary${status === "saved" ? " primary-success" : ""}`}
         onClick={handleSave}
         disabled={!page || status !== "idle"}
       >
