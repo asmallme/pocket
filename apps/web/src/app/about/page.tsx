@@ -210,16 +210,6 @@ export default function AboutPage() {
           <Link href="/login">创建账号</Link>
         </Button>
       </section>
-
-      <p className="text-center text-xs text-muted-foreground">
-        <Link href="/terms" className="underline underline-offset-2 hover:text-foreground">
-          用户协议
-        </Link>
-        <span className="mx-2">·</span>
-        <Link href="/privacy" className="underline underline-offset-2 hover:text-foreground">
-          隐私政策
-        </Link>
-      </p>
     </div>
   );
 }

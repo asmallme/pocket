@@ -6,6 +6,7 @@ import { Header } from "@/components/header";
 import { AppProviders } from "@/components/app-providers";
 import { ThemeProvider } from "@/components/theme-provider";
 import { MobileNavGate } from "@/components/mobile-nav-gate";
+import { SiteFooter } from "@/components/site-footer";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { themeInitScript } from "@/lib/themes";
 import "./globals.css";
@@ -53,13 +54,14 @@ export default function RootLayout({
         </Script>
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} min-h-screen antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col antialiased`}
       >
         <ThemeProvider>
           <AppProviders>
             <Header />
-            <main className="mx-auto w-full max-w-3xl px-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] pt-4 md:max-w-4xl md:pb-8 md:pt-5">
-              {children}
+            <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] pt-4 md:max-w-4xl md:pb-8 md:pt-5">
+              <div className="flex-1">{children}</div>
+              <SiteFooter />
             </main>
             <MobileNavGate />
           </AppProviders>

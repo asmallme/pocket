@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { generateSummary, suggestTags } from "@/lib/deepseek";
+import { checkApiRateLimit, withRateLimitHeaders } from "@/lib/api-rate-limit";
 
 /** 收藏前预览：建议标签与摘要（不写库）。 */
 export async function POST(request: NextRequest) {
@@ -11,6 +12,9 @@ export async function POST(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "请先登录" }, { status: 401 });
   }
+
+  const { blocked, result } = checkApiRateLimit(request, "ai/suggest", user.id);
+  if (blocked) return blocked;
 
   const body = await request.json().catch(() => null);
   const input = {
@@ -25,5 +29,8 @@ export async function POST(request: NextRequest) {
     suggestTags(input),
   ]);
 
-  return NextResponse.json({ summary, tags });
+  return withRateLimitHeaders(
+    NextResponse.json({ summary, tags }),
+    result
+  );
 }

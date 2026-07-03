@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { generateSummary, suggestTags } from "@/lib/deepseek";
 import { attachTagsToBookmark } from "@/lib/tag-service";
+import { checkApiRateLimit, withRateLimitHeaders } from "@/lib/api-rate-limit";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -30,6 +31,16 @@ export async function POST(request: NextRequest) {
       { error: "请先登录" },
       { status: 401, headers: CORS_HEADERS }
     );
+  }
+
+  const { blocked, result } = checkApiRateLimit(request, "ai/enrich", user.id);
+  if (blocked) {
+    const headers = new Headers(CORS_HEADERS);
+    blocked.headers.forEach((value, key) => headers.set(key, value));
+    return new NextResponse(blocked.body, {
+      status: blocked.status,
+      headers,
+    });
   }
 
   const supabase = await createClient();
@@ -94,5 +105,8 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ summary, tags }, { headers: CORS_HEADERS });
+  return withRateLimitHeaders(
+    NextResponse.json({ summary, tags }, { headers: CORS_HEADERS }),
+    result
+  );
 }

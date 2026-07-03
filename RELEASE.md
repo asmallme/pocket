@@ -113,15 +113,21 @@ update bookmarks set removed_at = now() where id = '<bookmark-id>';
 
 ### 2.3 API 滥用防护
 
-以下接口**当前无速率限制**：
+已按 **uid**（未登录 feed 按 IP）对各接口做滑动窗口限流，配置见 `apps/web/src/lib/rate-limit.ts`：
 
-| 接口 | 风险 | 完成 |
-|------|------|------|
-| `/api/ai/enrich` | DeepSeek 费用 | [ ] |
-| `/api/ai/suggest` | DeepSeek 费用 | [ ] |
-| `/api/unfurl` | 服务端 fetch 任意 URL | [ ] |
+| 接口 | 限额（已登录） | 完成 |
+|------|----------------|------|
+| `/api/ai/enrich` | 20 次/分钟，150 次/小时 | [x] |
+| `/api/ai/suggest` | 15 次/分钟，80 次/小时 | [x] |
+| `/api/unfurl` | 40 次/分钟，300 次/小时 | [x] |
+| `/api/feed` | 120 次/分钟（匿名 60 次/分钟） | [x] |
+| `/api/extension-token` | 5 次/分钟，20 次/小时 | [x] |
 
-建议：按用户 ID 限流，或在 DeepSeek 控制台设月度预算告警。
+超限返回 `429`，响应头含 `Retry-After`、`X-RateLimit-*`。
+
+本地验证：`node --import tsx scripts/rate-limit-check.mjs`
+
+> 当前为进程内内存计数，适合单实例 / 本地。多实例 Serverless 部署时建议接入 Upstash Redis 等共享存储。
 
 ### 2.4 设计预览页
 

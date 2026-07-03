@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { fetchFeed } from "@/lib/feed";
+import { checkApiRateLimit, withRateLimitHeaders } from "@/lib/api-rate-limit";
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -23,6 +24,14 @@ export async function GET(request: NextRequest) {
   if ((scope === "following" || scope === "subscribed_tags") && !user) {
     return NextResponse.json({ error: "请先登录" }, { status: 401 });
   }
+
+  const { blocked, result } = checkApiRateLimit(
+    request,
+    "feed",
+    user?.id ?? null
+  );
+  if (blocked) return blocked;
+
   const viewerId = user?.id ?? null;
 
   try {
@@ -32,7 +41,7 @@ export async function GET(request: NextRequest) {
       viewerId,
       tagSlug,
     });
-    return NextResponse.json(page);
+    return withRateLimitHeaders(NextResponse.json(page), result);
   } catch {
     return NextResponse.json({ error: "加载失败" }, { status: 500 });
   }
