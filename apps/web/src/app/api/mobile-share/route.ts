@@ -222,6 +222,19 @@ export async function POST(request: NextRequest) {
       }))
     : null;
 
+  // 分享标题若只是链接本身，优先用页面抓取到的标题（避免空标题/乱码回退）
+  const shareTitleUsable =
+    !!titleFromShare &&
+    titleFromShare !== url &&
+    !/^https?:\/\//i.test(titleFromShare);
+  const resolvedTitle =
+    contentType === "link"
+      ? (shareTitleUsable ? titleFromShare : null) ||
+        meta?.title ||
+        titleFromShare ||
+        url
+      : titleFromShare || null;
+
   const note = buildNote(textFromShare, url, explicitNote);
   const isPublic = body.is_public === true;
   const tagNames = Array.isArray(body.tags)
@@ -258,10 +271,7 @@ export async function POST(request: NextRequest) {
     .insert({
       user_id: tokenRow.user_id,
       url,
-      title:
-        contentType === "link"
-          ? titleFromShare || meta?.title || url
-          : titleFromShare || null,
+      title: resolvedTitle,
       description: meta?.description ?? null,
       cover_image: meta?.image ?? null,
       content_type: contentType,
@@ -290,10 +300,7 @@ export async function POST(request: NextRequest) {
     .eq("id", tokenRow.id);
 
   void enrichBookmark(admin, bookmark.id, tokenRow.user_id, {
-    title:
-      contentType === "link"
-        ? titleFromShare || meta?.title || url
-        : titleFromShare || null,
+    title: resolvedTitle,
     description: meta?.description ?? null,
     note,
     url,
