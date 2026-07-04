@@ -33,6 +33,9 @@ export const metadata: Metadata = {
     title: "Pocket",
     statusBarStyle: "default",
   },
+  verification: {
+    google: "xrMH9FXHBAoYdQSYtlrkS_6BOREqHZUO5rH3ErvD9SI",
+  },
 };
 
 export const viewport: Viewport = {
