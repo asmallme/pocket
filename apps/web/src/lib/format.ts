@@ -15,7 +15,7 @@ export function formatRelativeTime(iso: string): string {
   });
 }
 
-export function hostnameOf(url: string | null): string | null {
+export function hostnameOf(url: string | null | undefined): string | null {
   if (!url) return null;
   try {
     return new URL(url).hostname.replace(/^www\./, "");
