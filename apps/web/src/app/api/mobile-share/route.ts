@@ -100,10 +100,21 @@ function extractFirstUrl(...parts: string[]) {
 }
 
 function buildNote(text: string, url: string | null, explicitNote: string) {
-  if (explicitNote) return explicitNote.slice(0, 5000);
-  if (!text) return null;
-  const withoutUrl = url ? text.replace(url, "").trim() : text;
-  return (withoutUrl || text).slice(0, 5000);
+  const candidate = (explicitNote || text || "").trim();
+  if (!candidate) return null;
+
+  // 去掉链接后若没有实质文字，不写入推荐语（避免金句位置顶展示 URL）
+  let remainder = candidate;
+  if (url) {
+    remainder = remainder.split(url).join(" ");
+  }
+  remainder = remainder
+    .replace(/https?:\/\/[^\s<>"']+/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!remainder) return null;
+  return remainder.slice(0, 5000);
 }
 
 async function enrichBookmark(

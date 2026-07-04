@@ -4,7 +4,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LikeButton } from "@/components/like-button";
 import { ReadToggle } from "@/components/read-toggle";
 import { TagBadges } from "@/components/tag-badges";
-import { formatRelativeTime, hostnameOf } from "@/lib/format";
+import {
+  displayLinkTitle,
+  formatRelativeTime,
+  hostnameOf,
+  isRedundantNote,
+} from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { BookmarkWithAuthor } from "@pocket/shared";
 
@@ -21,6 +26,8 @@ export function BookmarkCard({
 }) {
   const host = hostnameOf(bookmark.url);
   const authorName = bookmark.author.display_name ?? bookmark.author.username;
+  const showNote = !isRedundantNote(bookmark.note, bookmark.url);
+  const linkTitle = displayLinkTitle(bookmark.title, bookmark.url);
 
   return (
     <article
@@ -57,8 +64,8 @@ export function BookmarkCard({
         </Link>
       </div>
 
-      {bookmark.note && (
-        <blockquote className="font-quote mb-2.5 rounded-r-[calc(var(--radius)-2px)] border-l-[3px] border-quote bg-quote-bg py-1.5 pl-3 pr-2 text-[15px] font-medium leading-snug text-foreground">
+      {showNote && (
+        <blockquote className="font-quote mb-2.5 break-words rounded-r-[calc(var(--radius)-2px)] border-l-[3px] border-quote bg-quote-bg py-1.5 pl-3 pr-2 text-[15px] font-medium leading-snug text-foreground">
           {bookmark.note}
         </blockquote>
       )}
@@ -90,12 +97,15 @@ export function BookmarkCard({
               />
             </div>
           )}
-          <div className="min-w-0 flex-1">
-            <p className="line-clamp-2 text-sm font-medium leading-snug group-hover:underline">
-              {bookmark.title ?? bookmark.url}
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <p className="line-clamp-2 break-words text-sm font-medium leading-snug group-hover:underline">
+              {linkTitle}
             </p>
-            {bookmark.description && !bookmark.ai_summary && (
-              <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+            {bookmark.description &&
+              !bookmark.ai_summary &&
+              bookmark.description !== bookmark.url &&
+              bookmark.description !== bookmark.title && (
+              <p className="mt-0.5 line-clamp-1 break-words text-xs text-muted-foreground">
                 {bookmark.description}
               </p>
             )}

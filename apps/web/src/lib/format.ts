@@ -23,3 +23,49 @@ export function hostnameOf(url: string | null): string | null {
     return null;
   }
 }
+
+/** 推荐语是否只是链接本身（不应作为金句展示）。 */
+export function isRedundantNote(
+  note: string | null | undefined,
+  url: string | null | undefined
+): boolean {
+  if (!note) return true;
+  const trimmed = note.trim();
+  if (!trimmed) return true;
+
+  if (url) {
+    const normalizedNote = trimmed.replace(/\/$/, "");
+    const normalizedUrl = url.replace(/\/$/, "");
+    if (normalizedNote === normalizedUrl) return true;
+  }
+
+  // 去掉所有 URL 后没有实质文字
+  const withoutUrls = trimmed.replace(/https?:\/\/[^\s<>"']+/gi, "").trim();
+  if (!withoutUrls) return true;
+
+  // 整段就是一个 URL（含查询参数）
+  if (/^https?:\/\/\S+$/i.test(trimmed)) return true;
+
+  return false;
+}
+
+/** 链接卡片标题：避免把超长 URL 当标题展示。 */
+export function displayLinkTitle(
+  title: string | null | undefined,
+  url: string | null | undefined
+): string {
+  const host = hostnameOf(url);
+  const fallback = host ? `${host} 上的链接` : "未命名链接";
+  if (!title?.trim()) return fallback;
+
+  const text = title.trim();
+  if (url) {
+    const normalizedTitle = text.replace(/\/$/, "");
+    const normalizedUrl = url.replace(/\/$/, "");
+    if (normalizedTitle === normalizedUrl || text.startsWith(url)) {
+      return fallback;
+    }
+  }
+  if (/^https?:\/\//i.test(text)) return fallback;
+  return text;
+}
