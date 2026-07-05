@@ -44,7 +44,12 @@ export function sanitizeExtracted(page: ExtractedPage): ExtractedPage {
 /** 合并页面提取与服务端 unfurl 结果，优先更干净的字段。 */
 export function mergePageMeta(
   extracted: ExtractedPage,
-  unfurled: { title: string | null; description: string | null; image: string | null } | null
+  unfurled: {
+    title: string | null;
+    description: string | null;
+    image: string | null;
+    content?: string | null;
+  } | null
 ): ExtractedPage {
   const base = sanitizeExtracted(extracted);
   if (!unfurled) return base;
@@ -64,5 +69,7 @@ export function mergePageMeta(
     title,
     description: description && description !== title ? description : null,
     image: unfurled.image || base.image,
+    // DOM 提取的正文（含登录墙内容）优先于服务端抓取
+    content: base.content ?? unfurled.content ?? null,
   };
 }

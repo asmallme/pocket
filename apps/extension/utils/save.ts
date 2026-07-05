@@ -10,6 +10,8 @@ export interface SaveInput {
   is_public?: boolean;
   source: "extension" | "contextmenu" | "shortcut";
   tags?: string[];
+  /** 页面正文节选：仅随 enrich 请求传给 AI，不写入 bookmarks。 */
+  content?: string | null;
 }
 
 export type SaveResult =
@@ -83,7 +85,9 @@ export async function saveBookmark(input: SaveInput): Promise<SaveResult> {
       await attachTagsToBookmark(id, input.tags);
     }
     // 入库后异步 AI  enrich，不阻塞收藏反馈
-    void import("./enrich").then(({ enrichBookmark }) => enrichBookmark(id));
+    void import("./enrich").then(({ enrichBookmark }) =>
+      enrichBookmark(id, input.content)
+    );
     return { status: "saved", id };
   } catch {
     await enqueue(input);
@@ -118,7 +122,9 @@ export async function flushSaveQueue(): Promise<number> {
         const { attachTagsToBookmark } = await import("./tags");
         await attachTagsToBookmark(id, item.tags);
       }
-      void import("./enrich").then(({ enrichBookmark }) => enrichBookmark(id));
+      void import("./enrich").then(({ enrichBookmark }) =>
+        enrichBookmark(id, item.content)
+      );
       flushed++;
     } catch {
       remaining.push(item);

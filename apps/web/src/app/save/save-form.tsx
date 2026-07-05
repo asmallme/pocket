@@ -38,6 +38,8 @@ export function SaveForm({
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState("");
   const [coverImage, setCoverImage] = useState<string | null>(null);
+  // 正文节选：只在内存中传给 AI 摘要，不入库
+  const [pageContent, setPageContent] = useState<string | null>(null);
   const [note, setNote] = useState(initialNote);
   const [tags, setTags] = useState<string[]>([]);
   const [aiPreview, setAiPreview] = useState<string | null>(null);
@@ -57,13 +59,14 @@ export function SaveForm({
       const res = await fetch("/api/unfurl", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: target }),
+        body: JSON.stringify({ url: target, content: true }),
       });
       if (!res.ok) throw new Error();
       const data: UnfurlResult = await res.json();
       setTitle((prev) => prev || data.title || "");
       setDescription((prev) => prev || data.description || "");
       setCoverImage(data.image);
+      setPageContent(data.content ?? null);
     } catch {
       toast.info("无法自动获取链接信息，可以手动填写标题");
     } finally {
@@ -94,6 +97,7 @@ export function SaveForm({
           description: description || null,
           note: note || null,
           url: mode === "link" ? url : null,
+          content: mode === "link" ? pageContent : null,
         }),
       });
       if (!res.ok) return;
@@ -161,7 +165,10 @@ export function SaveForm({
       void fetch("/api/ai/enrich", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bookmark_id: data.id }),
+        body: JSON.stringify({
+          bookmark_id: data.id,
+          content: mode === "link" ? pageContent : null,
+        }),
       }); // 入库后后台 AI，不阻塞跳转
 
       toast.success("已收藏");

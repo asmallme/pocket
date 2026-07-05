@@ -9,6 +9,7 @@ export interface UnfurlMeta {
   title: string | null;
   description: string | null;
   image: string | null;
+  content?: string | null;
 }
 
 /** 借用网站 /api/unfurl 解析链接元数据（带用户 token）。 */
@@ -25,7 +26,7 @@ export async function unfurlViaWeb(url: string): Promise<UnfurlMeta | null> {
         "Content-Type": "application/json",
         Authorization: `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify({ url }),
+      body: JSON.stringify({ url, content: true }),
     });
     if (!res.ok) return null;
     return (await res.json()) as UnfurlMeta;

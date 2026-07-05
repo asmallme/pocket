@@ -22,6 +22,10 @@ export async function POST(request: NextRequest) {
     description: (body?.description as string) ?? null,
     note: (body?.note as string) ?? null,
     url: (body?.url as string) ?? null,
+    content:
+      typeof body?.content === "string" && body.content.trim()
+        ? body.content.trim().slice(0, 4000)
+        : null,
   };
 
   const [summary, tags] = await Promise.all([

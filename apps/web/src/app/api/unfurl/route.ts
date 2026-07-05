@@ -51,7 +51,9 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const result_unfurl = await unfurl(url);
+    const result_unfurl = await unfurl(url, {
+      withContent: body?.content === true,
+    });
     return withRateLimitHeaders(
       NextResponse.json(result_unfurl, { headers: CORS_HEADERS }),
       result

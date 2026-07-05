@@ -3,6 +3,8 @@ export interface ExtractedPage {
   title: string;
   description: string | null;
   image: string | null;
+  /** 正文节选（供 AI 摘要，不入库）。 */
+  content: string | null;
 }
 
 /**
@@ -20,11 +22,28 @@ export function extractPageData(): ExtractedPage {
       )
       ?.content?.trim() || null;
 
+  // 通用正文提取：article/main 优先，段落聚合，截 3000 字
+  const pickContent = (): string | null => {
+    const scope =
+      document.querySelector<HTMLElement>("article") ??
+      document.querySelector<HTMLElement>("main") ??
+      document.body;
+    if (!scope) return null;
+    const paragraphs = Array.from(scope.querySelectorAll<HTMLElement>("p"))
+      .map((p) => p.innerText?.trim() ?? "")
+      .filter((t) => t.length >= 10);
+    let text = paragraphs.join("\n");
+    if (text.length < 200) text = scope.innerText?.trim() ?? "";
+    text = text.replace(/\n{3,}/g, "\n\n").trim();
+    return text.length >= 120 ? text.slice(0, 3000) : null;
+  };
+
   const result: ExtractedPage = {
     url: location.href,
     title: meta("og:title") ?? document.title ?? location.href,
     description: meta("og:description") ?? meta("description"),
     image: meta("og:image") ?? meta("twitter:image"),
+    content: pickContent(),
   };
 
   // 标题取首行，避免 meta 里塞入整页正文
@@ -55,6 +74,7 @@ export function extractPageData(): ExtractedPage {
             ? `${author}：${text.slice(0, 60)}${text.length > 60 ? "…" : ""}`
             : text.slice(0, 80);
           result.description = text.slice(0, 500);
+          result.content = text.slice(0, 3000);
           if (img) result.image = img;
         }
       }
@@ -69,11 +89,14 @@ export function extractPageData(): ExtractedPage {
       );
       if (title) result.title = title;
       if (contentEl) {
-        const intro = contentEl.innerText
+        const paragraphs = (contentEl as HTMLElement).innerText
           .split(/\n+/)
           .map((p) => p.trim())
-          .find((p) => p.length >= 20);
+          .filter(Boolean);
+        const intro = paragraphs.find((p) => p.length >= 20);
         if (intro) result.description = intro.slice(0, 300);
+        const body = paragraphs.join("\n");
+        if (body.length >= 40) result.content = body.slice(0, 3000);
       }
       if (author) {
         result.description = result.description
@@ -94,6 +117,7 @@ export function extractPageData(): ExtractedPage {
       ) as HTMLElement | null;
       if (rich) {
         result.description = rich.innerText.trim().slice(0, 300);
+        result.content = rich.innerText.trim().slice(0, 3000);
       }
     } else if (host.endsWith("bilibili.com")) {
       const title = document.querySelector("h1")?.textContent?.trim();
@@ -121,7 +145,10 @@ export function extractPageData(): ExtractedPage {
       const post = document.querySelector(
         '[data-test-id="post-content"]'
       ) as HTMLElement | null;
-      if (post) result.description = post.innerText.trim().slice(0, 300);
+      if (post) {
+        result.description = post.innerText.trim().slice(0, 300);
+        result.content = post.innerText.trim().slice(0, 3000);
+      }
     } else if (host === "sspai.com" || host.endsWith(".sspai.com")) {
       const title = document
         .querySelector("h1.article-title, h1")
@@ -161,6 +188,7 @@ export async function extractFromTab(tab: {
     title: tab.title ?? tab.url,
     description: null,
     image: null,
+    content: null,
   };
 
   if (tab.id == null) return fallback;

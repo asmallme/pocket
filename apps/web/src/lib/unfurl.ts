@@ -145,10 +145,12 @@ function decodeHtmlBytes(bytes: Uint8Array, contentType: string): string {
   return best;
 }
 
+type ReadMode = "head" | "full" | "wechat";
+
 async function readBodyBytes(
   res: Response,
   limit = 512 * 1024,
-  readFullBody = false
+  mode: ReadMode = "head"
 ): Promise<Uint8Array> {
   const reader = res.body?.getReader();
   if (!reader) {
@@ -167,12 +169,12 @@ async function readBodyBytes(
     chunks.push(next);
     total += next.length;
     headLatin1 += new TextDecoder("latin1").decode(next);
-    if (!readFullBody) {
+    if (mode === "head") {
       // 通用链接：head 里的 meta 足够
       if (headLatin1.includes("</head>") || headLatin1.includes("</HEAD>")) {
         break;
       }
-    } else {
+    } else if (mode === "wechat") {
       const contentStart = headLatin1.indexOf('id="js_content"');
       if (contentStart >= 0) {
         const afterContent = headLatin1.slice(contentStart);
@@ -269,6 +271,40 @@ function extractWeixinContentIntro(html: string, maxLen = 300): string | null {
   return fallback ? fallback.slice(0, maxLen) : null;
 }
 
+/** 正文节选上限：供 AI 摘要使用，够用即可，不追求完整。 */
+const MAX_CONTENT_CHARS = 3000;
+
+/** 微信文章全文节选（跳过关注引导等模板段落）。 */
+function extractWeixinContentBody(html: string): string | null {
+  const match = html.match(/id="js_content"[^>]*>([\s\S]*?)<\/div>\s*<script/i);
+  if (!match?.[1]) return null;
+
+  const paragraphs = stripHtmlToText(match[1])
+    .split(/\n+/)
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0 && !WECHAT_INTRO_SKIP.test(p));
+
+  const text = paragraphs.join("\n");
+  return text.length >= 40 ? text.slice(0, MAX_CONTENT_CHARS) : null;
+}
+
+/** 通用页面正文启发式提取：article/main 优先，剥离导航页脚等区块。 */
+function extractGenericContent(html: string): string | null {
+  const cleaned = html
+    .replace(/<(script|style|noscript|svg|iframe)\b[\s\S]*?<\/\1\s*>/gi, " ")
+    .replace(/<(header|footer|nav|aside|form)\b[\s\S]*?<\/\1\s*>/gi, " ");
+
+  const container =
+    cleaned.match(/<article[^>]*>([\s\S]*?)<\/article>/i)?.[1] ??
+    cleaned.match(/<main[^>]*>([\s\S]*?)<\/main>/i)?.[1] ??
+    cleaned.match(/<body[^>]*>([\s\S]*)<\/body>/i)?.[1] ??
+    cleaned;
+
+  const text = stripHtmlToText(container);
+  if (text.length < 120 || looksMostlyGarbled(text)) return null;
+  return text.slice(0, MAX_CONTENT_CHARS);
+}
+
 function isWeixinBlocked(html: string): boolean {
   return (
     /环境异常|secitptpage|verifybar|captcha/i.test(html) &&
@@ -276,7 +312,11 @@ function isWeixinBlocked(html: string): boolean {
   );
 }
 
-function parseWeixinArticle(html: string, baseUrl: URL): UnfurlResult {
+function parseWeixinArticle(
+  html: string,
+  baseUrl: URL,
+  withContent: boolean
+): UnfurlResult {
   const title =
     extractMeta(html, "og:title") ??
     extractScriptVar(html, "msg_title") ??
@@ -330,13 +370,18 @@ function parseWeixinArticle(html: string, baseUrl: URL): UnfurlResult {
     description: cleanText(description),
     image,
     siteName: cleanText(author) ?? "微信公众号",
+    content: withContent ? extractWeixinContentBody(html) : null,
   };
 }
 
-export async function unfurl(rawUrl: string): Promise<UnfurlResult> {
+export async function unfurl(
+  rawUrl: string,
+  options?: { withContent?: boolean }
+): Promise<UnfurlResult> {
   const url = isSafeUrl(rawUrl);
   if (!url) throw new Error("无效的链接");
 
+  const withContent = options?.withContent ?? false;
   const isWeixin = isWeixinArticleUrl(url);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8000);
@@ -362,13 +407,17 @@ export async function unfurl(rawUrl: string): Promise<UnfurlResult> {
         description: null,
         image: null,
         siteName: null,
+        content: null,
       };
     }
+
+    // 错误页（Cloudflare 502 等）不当正文喂给 AI
+    const extractContent = withContent && res.ok;
 
     const bytes = await readBodyBytes(
       res,
       isWeixin ? WECHAT_READ_LIMIT : 512 * 1024,
-      isWeixin
+      isWeixin ? "wechat" : extractContent ? "full" : "head"
     );
     const html = decodeHtmlBytes(bytes, contentType).replace(/\0/g, "");
 
@@ -380,9 +429,10 @@ export async function unfurl(rawUrl: string): Promise<UnfurlResult> {
           description: null,
           image: null,
           siteName: "微信公众号",
+          content: null,
         };
       }
-      return parseWeixinArticle(html, url);
+      return parseWeixinArticle(html, url, extractContent);
     }
 
     const titleTag = html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1]?.trim();
@@ -410,6 +460,7 @@ export async function unfurl(rawUrl: string): Promise<UnfurlResult> {
       ),
       image,
       siteName: cleanText(extractMeta(html, "og:site_name")),
+      content: extractContent ? extractGenericContent(html) : null,
     };
   } finally {
     clearTimeout(timeout);

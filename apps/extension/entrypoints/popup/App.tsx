@@ -125,6 +125,7 @@ export function App() {
       is_public: isPublic,
       source: "extension",
       tags,
+      content: meta.content,
     });
 
     if (result.status === "saved" || result.status === "duplicate") {

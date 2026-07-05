@@ -91,6 +91,7 @@ async function handleContextMenu(
         content_type: "link",
         note: info.selectionText.trim().slice(0, 5000),
         source: "contextmenu",
+        content: page?.content ?? null,
       };
       break;
 
@@ -115,6 +116,7 @@ async function handleContextMenu(
         cover_image: meta?.image ?? null,
         content_type: "link",
         source: "contextmenu",
+        content: meta?.content ?? null,
       };
       break;
     }
@@ -144,6 +146,7 @@ async function resolvePageMetaForSave(page: {
   title: string;
   description: string | null;
   image: string | null;
+  content: string | null;
 }) {
   const unfurled = await unfurlViaWeb(page.url);
   const merged = mergePageMeta(page, unfurled);
@@ -152,6 +155,7 @@ async function resolvePageMetaForSave(page: {
     title: merged.title,
     description: merged.description,
     cover_image: merged.image,
+    content: merged.content,
   };
 }
 

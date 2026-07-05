@@ -90,6 +90,8 @@ export interface UnfurlResult {
   description: string | null;
   image: string | null;
   siteName: string | null;
+  /** 正文节选（仅按需提取，供 AI 摘要使用，不入库）。 */
+  content?: string | null;
 }
 
 export interface CreateBookmarkInput {

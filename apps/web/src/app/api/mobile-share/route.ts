@@ -126,6 +126,7 @@ async function enrichBookmark(
     description: string | null;
     note: string | null;
     url: string | null;
+    content: string | null;
   }
 ) {
   const { data: rawProfile } = await admin
@@ -224,12 +225,13 @@ export async function POST(request: NextRequest) {
 
   const contentType = url ? "link" : "text";
   const meta = url
-    ? await unfurl(url).catch(() => ({
+    ? await unfurl(url, { withContent: true }).catch(() => ({
         url,
         title: null,
         description: null,
         image: null,
         siteName: null,
+        content: null,
       }))
     : null;
 
@@ -315,6 +317,7 @@ export async function POST(request: NextRequest) {
     description: meta?.description ?? null,
     note,
     url,
+    content: meta?.content ?? null,
   });
 
   return withRateLimitHeaders(

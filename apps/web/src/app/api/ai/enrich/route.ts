@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { generateSummary, suggestTags } from "@/lib/deepseek";
 import { attachTagsToBookmark } from "@/lib/tag-service";
+import { unfurl } from "@/lib/unfurl";
 import { checkApiRateLimit, withRateLimitHeaders } from "@/lib/api-rate-limit";
+
+/** 请求体正文的服务端截断上限。 */
+const MAX_CONTENT_CHARS = 4000;
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -50,12 +54,18 @@ export async function POST(request: NextRequest) {
   if (!bookmarkId) {
     return NextResponse.json({ error: "缺少 bookmark_id" }, { status: 400 });
   }
+  let pageContent =
+    typeof body?.content === "string" && body.content.trim()
+      ? body.content.trim().slice(0, MAX_CONTENT_CHARS)
+      : null;
 
   const [{ data: bookmark }, { data: profile }, { data: existingTags }] =
     await Promise.all([
     supabase
       .from("bookmarks")
-      .select("id, user_id, title, description, note, url, ai_summary")
+      .select(
+        "id, user_id, title, description, note, url, ai_summary, content_type"
+      )
       .eq("id", bookmarkId)
       .single(),
     supabase
@@ -76,19 +86,36 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const hasTags = (existingTags ?? []).length > 0;
+  const needsSummary =
+    profile?.ai_summary_enabled !== false && !bookmark.ai_summary;
+  const needsTags = profile?.ai_auto_tag_enabled !== false && !hasTags;
+
+  // 调用方没带正文时服务端补抓一次（转存、老版本插件等场景的兜底）
+  if (
+    !pageContent &&
+    (needsSummary || needsTags) &&
+    bookmark.content_type === "link" &&
+    bookmark.url
+  ) {
+    const meta = await unfurl(bookmark.url, { withContent: true }).catch(
+      () => null
+    );
+    pageContent = meta?.content ?? null;
+  }
+
   const input = {
     title: bookmark.title,
     description: bookmark.description,
     note: bookmark.note,
     url: bookmark.url,
+    content: pageContent,
   };
 
   let summary: string | null = bookmark.ai_summary ?? null;
   let tags: string[] = [];
 
-  const hasTags = (existingTags ?? []).length > 0;
-
-  if (profile?.ai_summary_enabled !== false && !bookmark.ai_summary) {
+  if (needsSummary) {
     summary = await generateSummary(input);
     if (summary) {
       await supabase
@@ -98,7 +125,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  if (profile?.ai_auto_tag_enabled !== false && !hasTags) {
+  if (needsTags) {
     tags = await suggestTags(input);
     if (tags.length > 0) {
       await attachTagsToBookmark(supabase, bookmarkId, tags);
