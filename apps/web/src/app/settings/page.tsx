@@ -38,9 +38,9 @@ export default async function SettingsPage({
     mobileShareToken as unknown as MobileShareTokenInfo | null;
 
   return (
-    <div className="mx-auto max-w-lg">
+    <div>
       <h1 className="mb-2 text-xl font-semibold">个人中心</h1>
-      <p className="mb-6 text-sm text-muted-foreground">
+      <p className="mb-5 text-sm text-muted-foreground">
         管理资料、阅读偏好，以及 iOS 快捷指令收藏配置。
       </p>
       <SettingsForm

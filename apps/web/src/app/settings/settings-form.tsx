@@ -151,7 +151,7 @@ export function SettingsForm({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* 头像 */}
       <Card>
         <CardContent className="flex items-center gap-4">

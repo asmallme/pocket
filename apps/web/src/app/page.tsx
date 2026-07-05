@@ -59,6 +59,7 @@ export default async function HomePage({
           </div>
         )}
         <Feed
+          key={tagSlug ?? "__all__"}
           scope={tagSlug ? "tag" : "global"}
           initialPage={globalPage}
           tagSlug={tagSlug}

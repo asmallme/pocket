@@ -72,6 +72,7 @@ export default async function TagDetailPage({
         />
       </div>
       <Feed
+        key={slug}
         scope="tag"
         tagSlug={slug}
         initialPage={page}

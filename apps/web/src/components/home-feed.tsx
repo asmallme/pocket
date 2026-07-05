@@ -99,6 +99,8 @@ export function HomeFeed({
 
       {tab === "global" && (
         <Feed
+          // 切换标签时强制重挂载，否则客户端 state 会保留上一个筛选的列表
+          key={tagSlug ?? "__all__"}
           scope={tagSlug ? "tag" : "global"}
           initialPage={globalPage}
           tagSlug={tagSlug}
