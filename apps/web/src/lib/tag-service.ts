@@ -179,10 +179,11 @@ export async function fetchRelatedBookmarks(
   ].slice(0, limit * 3);
   if (ids.length === 0) return [];
 
+  // 与 lib/feed.ts 的 BOOKMARK_SELECT 保持一致（避免循环 import，此处内联）
   const { data } = await supabase
     .from("bookmarks")
     .select(
-      "*, author:profiles!bookmarks_user_id_fkey(id, username, display_name, avatar_url)"
+      "*, author:profiles!bookmarks_user_id_fkey(id, username, display_name, avatar_url), origin_author:profiles!bookmarks_reposted_from_user_id_fkey(id, username, display_name, avatar_url)"
     )
     .in("id", ids)
     .eq("is_public", true)

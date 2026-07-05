@@ -166,6 +166,8 @@ export default async function UserPage({
             key={bookmark.id}
             bookmark={bookmark}
             likedByViewer={page.likedIds.includes(bookmark.id)}
+            viewerId={user?.id ?? null}
+            repostedByViewerId={page.repostedIds[bookmark.id] ?? null}
           />
         ))}
         {page.items.length === 0 && (

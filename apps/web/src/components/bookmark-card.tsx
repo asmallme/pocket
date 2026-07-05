@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Globe, Lock, MessageCircle, Sparkles, Star } from "lucide-react";
+import { Globe, Lock, MessageCircle, Repeat2, Sparkles, Star } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LikeButton } from "@/components/like-button";
 import { ReadToggle } from "@/components/read-toggle";
+import { RepostButton } from "@/components/repost-button";
 import { TagBadges } from "@/components/tag-badges";
 import {
   displayLinkTitle,
@@ -18,16 +19,27 @@ export function BookmarkCard({
   likedByViewer,
   ownerControls = false,
   quietMode = false,
+  viewerId,
+  repostedByViewerId,
 }: {
   bookmark: BookmarkWithAuthor;
   likedByViewer?: boolean;
   ownerControls?: boolean;
   quietMode?: boolean;
+  /** 传入（可为 null）时才渲染转存按钮；undefined 表示调用方不启用转存 */
+  viewerId?: string | null;
+  repostedByViewerId?: string | null;
 }) {
   const host = hostnameOf(bookmark.url);
   const authorName = bookmark.author.display_name ?? bookmark.author.username;
   const showNote = !isRedundantNote(bookmark.note, bookmark.url);
   const linkTitle = displayLinkTitle(bookmark.title, bookmark.url);
+  const originAuthor = bookmark.origin_author ?? null;
+  const showRepost =
+    viewerId !== undefined &&
+    viewerId !== bookmark.user_id &&
+    bookmark.is_public &&
+    !bookmark.removed_at;
 
   return (
     <article
@@ -63,6 +75,26 @@ export function BookmarkCard({
           详情
         </Link>
       </div>
+
+      {originAuthor && (
+        <p className="mb-2 flex items-center gap-1 text-xs text-muted-foreground">
+          <Repeat2 className="size-3.5 shrink-0" />
+          转存自{" "}
+          <Link
+            href={
+              bookmark.reposted_from
+                ? `/b/${bookmark.reposted_from}`
+                : `/u/${originAuthor.username}`
+            }
+            className="truncate hover:underline"
+          >
+            @{originAuthor.display_name ?? originAuthor.username}
+          </Link>
+          {!bookmark.reposted_from && (
+            <span className="shrink-0">（原收藏已删除）</span>
+          )}
+        </p>
+      )}
 
       {showNote && (
         <blockquote className="font-quote mb-2.5 break-words rounded-r-[calc(var(--radius)-2px)] border-l-[3px] border-quote bg-quote-bg py-1.5 pl-3 pr-2 text-[15px] font-medium leading-snug text-foreground">
@@ -151,6 +183,14 @@ export function BookmarkCard({
             <MessageCircle className="size-3.5" />
             {bookmark.comment_count > 0 && bookmark.comment_count}
           </Link>
+          {showRepost && (
+            <RepostButton
+              bookmarkId={bookmark.id}
+              initialCount={bookmark.repost_count}
+              initialRepostedId={repostedByViewerId}
+              hasAiSummary={!!bookmark.ai_summary}
+            />
+          )}
           {ownerControls && (
             <span className="ml-auto">
               <ReadToggle bookmarkId={bookmark.id} readAt={bookmark.read_at} />

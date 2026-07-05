@@ -62,6 +62,7 @@ export default async function HomePage({
           scope={tagSlug ? "tag" : "global"}
           initialPage={globalPage}
           tagSlug={tagSlug}
+          viewerId={null}
         />
       </div>
     );
@@ -82,6 +83,7 @@ export default async function HomePage({
           globalPage={globalPage}
           followingPage={followingPage}
           tagsPage={tagsPage}
+          viewerId={user.id}
         />
       </Suspense>
     </>

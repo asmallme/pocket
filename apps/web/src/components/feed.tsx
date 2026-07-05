@@ -12,16 +12,21 @@ export function Feed({
   initialPage,
   emptyMessage = "还没有内容",
   tagSlug,
+  viewerId,
 }: {
   scope: "global" | "following" | "tag" | "subscribed_tags";
   initialPage: FeedPage;
   emptyMessage?: string;
   tagSlug?: string;
+  viewerId?: string | null;
 }) {
   const quietMode = useQuietMode();
   const [items, setItems] = useState<BookmarkWithAuthor[]>(initialPage.items);
   const [likedIds, setLikedIds] = useState<Set<string>>(
     new Set(initialPage.likedIds)
+  );
+  const [repostedIds, setRepostedIds] = useState<Record<string, string>>(
+    initialPage.repostedIds ?? {}
   );
   const [cursor, setCursor] = useState(initialPage.nextCursor);
   const [loading, setLoading] = useState(false);
@@ -41,6 +46,7 @@ export function Feed({
         return [...prev, ...page.items.filter((b) => !seen.has(b.id))];
       });
       setLikedIds((prev) => new Set([...prev, ...page.likedIds]));
+      setRepostedIds((prev) => ({ ...(page.repostedIds ?? {}), ...prev }));
       setCursor(page.nextCursor);
     } finally {
       setLoading(false);
@@ -76,6 +82,8 @@ export function Feed({
           bookmark={bookmark}
           likedByViewer={likedIds.has(bookmark.id)}
           quietMode={quietMode}
+          viewerId={viewerId}
+          repostedByViewerId={repostedIds[bookmark.id] ?? null}
         />
       ))}
       <div ref={sentinelRef} className="flex justify-center py-4">

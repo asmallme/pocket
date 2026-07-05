@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Search, Shuffle, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { BOOKMARK_SELECT } from "@/lib/feed";
 import { fetchTagsForBookmarks } from "@/lib/tag-service";
 import { BookmarkCard } from "@/components/bookmark-card";
 import { EditBookmarkDialog } from "@/components/edit-bookmark-dialog";
@@ -133,9 +134,7 @@ export default async function MyBookmarksPage({
 
   let query = supabase
     .from("bookmarks")
-    .select(
-      "*, author:profiles!bookmarks_user_id_fkey(id, username, display_name, avatar_url)"
-    )
+    .select(BOOKMARK_SELECT)
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(PAGE_SIZE + 1);

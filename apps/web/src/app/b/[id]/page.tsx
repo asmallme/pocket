@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { BOOKMARK_SELECT } from "@/lib/feed";
 import { fetchRelatedBookmarks, fetchTagsForBookmarks } from "@/lib/tag-service";
 import { BookmarkCard } from "@/components/bookmark-card";
 import { Comments } from "@/components/comments";
@@ -8,9 +9,6 @@ import { DeleteBookmarkButton } from "@/components/delete-bookmark-button";
 import { EditBookmarkDialog } from "@/components/edit-bookmark-dialog";
 import { ReportDialog } from "@/components/report-dialog";
 import type { BookmarkWithAuthor, Comment } from "@pocket/shared";
-
-const BOOKMARK_SELECT =
-  "*, author:profiles!bookmarks_user_id_fkey(id, username, display_name, avatar_url)";
 
 export async function generateMetadata({
   params,
@@ -70,25 +68,40 @@ export default async function BookmarkDetailPage({
   const typed = bookmark as unknown as BookmarkWithAuthor;
   const isOwner = user?.id === typed.user_id;
 
-  const [{ data: comments }, likedRes, tagMap, related] = await Promise.all([
-    supabase
-      .from("comments")
-      .select(
-        "*, author:profiles!comments_user_id_fkey(id, username, display_name, avatar_url)"
-      )
-      .eq("bookmark_id", id)
-      .order("created_at", { ascending: true }),
-    user
-      ? supabase
-          .from("likes")
-          .select("bookmark_id")
-          .eq("bookmark_id", id)
-          .eq("user_id", user.id)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
-    fetchTagsForBookmarks(supabase, [id]),
-    fetchRelatedBookmarks(supabase, id),
-  ]);
+  const [{ data: comments }, likedRes, tagMap, related, repostRes] =
+    await Promise.all([
+      supabase
+        .from("comments")
+        .select(
+          "*, author:profiles!comments_user_id_fkey(id, username, display_name, avatar_url)"
+        )
+        .eq("bookmark_id", id)
+        .order("created_at", { ascending: true }),
+      user
+        ? supabase
+            .from("likes")
+            .select("bookmark_id")
+            .eq("bookmark_id", id)
+            .eq("user_id", user.id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+      fetchTagsForBookmarks(supabase, [id]),
+      fetchRelatedBookmarks(supabase, id),
+      user && !isOwner
+        ? supabase
+            .from("bookmarks")
+            .select("id")
+            .eq("user_id", user.id)
+            .neq("id", id)
+            .or(
+              typed.url
+                ? `reposted_from.eq.${id},url.eq."${typed.url.replaceAll('"', "")}"`
+                : `reposted_from.eq.${id}`
+            )
+            .limit(1)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
 
   const typedWithTags = {
     ...typed,
@@ -107,6 +120,8 @@ export default async function BookmarkDetailPage({
         bookmark={typedWithTags}
         likedByViewer={!!likedRes.data}
         ownerControls={isOwner}
+        viewerId={user?.id ?? null}
+        repostedByViewerId={repostRes.data?.id ?? null}
       />
 
       <div className="flex justify-end gap-1">

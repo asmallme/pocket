@@ -15,12 +15,14 @@ export function HomeFeed({
   globalPage,
   followingPage,
   tagsPage,
+  viewerId,
 }: {
   tagSlug?: string;
   popularTags: (Tag & { count: number })[];
   globalPage: FeedPage;
   followingPage: FeedPage;
   tagsPage: FeedPage;
+  viewerId?: string | null;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -100,6 +102,7 @@ export function HomeFeed({
           scope={tagSlug ? "tag" : "global"}
           initialPage={globalPage}
           tagSlug={tagSlug}
+          viewerId={viewerId}
         />
       )}
       {tab === "following" && (
@@ -107,6 +110,7 @@ export function HomeFeed({
           scope="following"
           initialPage={followingPage}
           emptyMessage="关注一些人，这里会出现他们的收藏"
+          viewerId={viewerId}
         />
       )}
       {tab === "tags" && (
@@ -114,6 +118,7 @@ export function HomeFeed({
           scope="subscribed_tags"
           initialPage={tagsPage}
           emptyMessage="去标签页订阅感兴趣的主题"
+          viewerId={viewerId}
         />
       )}
     </div>

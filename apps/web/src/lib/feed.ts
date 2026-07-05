@@ -8,10 +8,12 @@ export interface FeedPage {
   items: BookmarkWithAuthor[];
   nextCursor: string | null;
   likedIds: string[];
+  /** feed 内收藏 id → viewer 自己已收藏的同内容收藏 id */
+  repostedIds: Record<string, string>;
 }
 
-const BOOKMARK_SELECT =
-  "*, author:profiles!bookmarks_user_id_fkey(id, username, display_name, avatar_url)";
+export const BOOKMARK_SELECT =
+  "*, author:profiles!bookmarks_user_id_fkey(id, username, display_name, avatar_url), origin_author:profiles!bookmarks_reposted_from_user_id_fkey(id, username, display_name, avatar_url)";
 
 interface FeedOptions {
   scope: "global" | "following" | "user" | "tag" | "subscribed_tags";
@@ -26,7 +28,12 @@ export async function fetchFeed(
   supabase: SupabaseClient,
   options: FeedOptions
 ): Promise<FeedPage> {
-  const emptyPage: FeedPage = { items: [], nextCursor: null, likedIds: [] };
+  const emptyPage: FeedPage = {
+    items: [],
+    nextCursor: null,
+    likedIds: [],
+    repostedIds: {},
+  };
 
   let bookmarkIdsFilter: string[] | null = null;
   if (options.scope === "tag" && options.tagSlug) {
@@ -103,21 +110,53 @@ export async function fetchFeed(
   items = items.map((b) => ({ ...b, tags: tagMap.get(b.id) ?? [] }));
 
   let likedIds: string[] = [];
+  const repostedIds: Record<string, string> = {};
   if (options.viewerId && items.length > 0) {
-    const { data: likes } = await supabase
-      .from("likes")
-      .select("bookmark_id")
-      .eq("user_id", options.viewerId)
-      .in(
-        "bookmark_id",
-        items.map((b) => b.id)
-      );
+    const ids = items.map((b) => b.id);
+    const urls = items
+      .map((b) => b.url)
+      .filter((u): u is string => Boolean(u));
+    const [{ data: likes }, { data: ownByRepost }, { data: ownByUrl }] =
+      await Promise.all([
+        supabase
+          .from("likes")
+          .select("bookmark_id")
+          .eq("user_id", options.viewerId)
+          .in("bookmark_id", ids),
+        supabase
+          .from("bookmarks")
+          .select("id, reposted_from")
+          .eq("user_id", options.viewerId)
+          .in("reposted_from", ids),
+        urls.length > 0
+          ? supabase
+              .from("bookmarks")
+              .select("id, url")
+              .eq("user_id", options.viewerId)
+              .in("url", urls)
+          : Promise.resolve({ data: [] as { id: string; url: string }[] }),
+      ]);
     likedIds = (likes ?? []).map((l) => l.bookmark_id);
+
+    const repostMap = new Map<string, string>();
+    for (const row of ownByRepost ?? []) {
+      if (row.reposted_from) repostMap.set(row.reposted_from, row.id);
+    }
+    const urlMap = new Map<string, string>();
+    for (const row of ownByUrl ?? []) {
+      if (row.url) urlMap.set(row.url, row.id);
+    }
+    for (const b of items) {
+      const own =
+        repostMap.get(b.id) ?? (b.url ? urlMap.get(b.url) : undefined);
+      if (own && own !== b.id) repostedIds[b.id] = own;
+    }
   }
 
   return {
     items,
     likedIds,
+    repostedIds,
     nextCursor:
       items.length === PAGE_SIZE ? items[items.length - 1].created_at : null,
   };

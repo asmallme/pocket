@@ -5,7 +5,8 @@ export type BookmarkSource =
   | "extension"
   | "contextmenu"
   | "shortcut"
-  | "pwa-share";
+  | "pwa-share"
+  | "repost";
 
 export interface Tag {
   id: string;
@@ -43,6 +44,9 @@ export interface Bookmark {
   read_at: string | null;
   ai_summary: string | null;
   is_starred: boolean;
+  reposted_from: string | null;
+  reposted_from_user_id: string | null;
+  repost_count: number;
   created_at: string;
 }
 
@@ -58,7 +62,17 @@ export interface Report {
 /** Bookmark row joined with its author profile, as returned by feed queries. */
 export interface BookmarkWithAuthor extends Bookmark {
   author: Pick<Profile, "id" | "username" | "display_name" | "avatar_url">;
+  origin_author?: Pick<
+    Profile,
+    "id" | "username" | "display_name" | "avatar_url"
+  > | null;
   tags?: Tag[];
+}
+
+/** repost_bookmark RPC 的返回值。 */
+export interface RepostResult {
+  id: string;
+  duplicate: boolean;
 }
 
 export interface Comment {

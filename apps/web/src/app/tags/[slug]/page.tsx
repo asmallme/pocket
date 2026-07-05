@@ -76,6 +76,7 @@ export default async function TagDetailPage({
         tagSlug={slug}
         initialPage={page}
         emptyMessage="这个标签下还没有公开收藏"
+        viewerId={user?.id ?? null}
       />
     </div>
   );
