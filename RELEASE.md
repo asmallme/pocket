@@ -15,7 +15,7 @@
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase API 地址 | [ ] |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 客户端鉴权 | [ ] |
 | `SUPABASE_SERVICE_ROLE_KEY` | 插件网页授权 `/api/extension-token` | [ ] |
-| `NEXT_PUBLIC_SITE_URL` | SEO、sitemap、OAuth 回调（如 `https://pocket-web-mu.vercel.app`） | [ ] |
+| `NEXT_PUBLIC_SITE_URL` | SEO、sitemap、OAuth 回调（生产为 `https://wangdou.app`） | [ ] |
 | `DEEPSEEK_API_KEY` | v1.3 AI 摘要与自动打标（不配则 AI 静默失效，不影响收藏） | [ ] |
 
 参考模板：`apps/web/.env.example`
@@ -27,7 +27,7 @@
 ```env
 WXT_SUPABASE_URL=https://<project-ref>.supabase.co
 WXT_SUPABASE_ANON_KEY=<anon-key>
-WXT_WEB_URL=https://<生产域名>
+WXT_WEB_URL=https://wangdou.app
 ```
 
 | 检查项 | 完成 |
@@ -216,7 +216,7 @@ Dashboard → **Authentication → URL Configuration**：
 | 项 | 值 |
 |----|-----|
 | Supabase 项目 ref | `xtiqsttyrcghypxeyqno` |
-| 生产 Web（示例） | `https://pocket-web-mu.vercel.app` |
+| 生产 Web | `https://wangdou.app`（旧 `pocket-web-mu.vercel.app` 由 Vercel 307 跳转） |
 | 插件构建输出 | `apps/extension/.output/chrome-mv3` |
 | 本地开发 | `pnpm db:start` → `pnpm dev` |
 | E2E 测试 | `node scripts/e2e-check.mjs` |
