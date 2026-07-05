@@ -36,7 +36,7 @@ export type MobileShareTokenInfo = {
 const TEMPLATE_LINK = process.env.NEXT_PUBLIC_IOS_SHORTCUT_LINK ?? "";
 
 function buildSetupGuide(apiUrl: string, token: string) {
-  return `Pocket iOS 快捷指令配置包
+  return `网兜 iOS 快捷指令配置包
 ========================
 
 【请求地址】
@@ -49,7 +49,7 @@ Bearer ${token}
 application/json
 
 【请求体 JSON】
-把「快捷指令输入」作为 text 字段即可，Pocket 会自动从文本里抽取链接：
+把「快捷指令输入」作为 text 字段即可，网兜会自动从文本里抽取链接：
 
 {
   "text": "这里填快捷指令输入",
@@ -67,7 +67,7 @@ application/json
 二、新建快捷指令
 1. 打开 iPhone 自带的「快捷指令」App。
 2. 点右上角「+」新建快捷指令。
-3. 点顶部快捷指令名称，改成「收藏到 Pocket」。
+3. 点顶部快捷指令名称，改成「收藏到网兜」。
 4. 点右上角「ⓘ」或底部「快捷指令详情」。
 5. 打开「在共享表单中显示」。
 6. 点「选取类型」：
@@ -98,13 +98,13 @@ application/json
 四、保存并试用
 1. 点右上角「完成」保存。
 2. 打开 Safari 任意网页，点底部分享按钮。
-3. 左右滑动分享菜单，找到「收藏到 Pocket」并点选。
-4. 回到 Pocket「我的收藏」，应能看到刚保存的内容（默认私密）。
+3. 左右滑动分享菜单，找到「收藏到网兜」并点选。
+4. 回到网兜「我的收藏」，应能看到刚保存的内容（默认私密）。
 
 五、X App / 其他 App
 1. 在 X App 打开一条帖子，点分享。
-2. 选择「收藏到 Pocket」。
-3. 帖子链接和文字会一并提交；Pocket 会优先抽取链接，其余文字作为推荐语。
+2. 选择「收藏到网兜」。
+3. 帖子链接和文字会一并提交；网兜会优先抽取链接，其余文字作为推荐语。
 
 常见问题
 - 分享菜单里找不到：确认已打开「在共享表单中显示」，并勾选了 URL / 文本。
@@ -204,7 +204,7 @@ export function MobileShareTokenCard({
           <div>
             <CardTitle className="text-base">iOS 快捷指令收藏</CardTitle>
             <CardDescription className="mt-1">
-              在 Safari、X App 等应用的系统分享菜单里，一键收藏到 Pocket。
+              在 Safari、X App 等应用的系统分享菜单里，一键收藏到网兜。
               推荐先点「一键生成并复制配置」，再到快捷指令 App 按步骤粘贴。
             </CardDescription>
           </div>
@@ -351,7 +351,7 @@ export function MobileShareTokenCard({
                 <ol className="mt-1 list-decimal space-y-1 pl-4">
                   <li>打开 iPhone 自带「快捷指令」App。</li>
                   <li>点右上角「+」。</li>
-                  <li>点顶部名称，改成「收藏到 Pocket」。</li>
+                  <li>点顶部名称，改成「收藏到网兜」。</li>
                   <li>点右上角「ⓘ」打开详情。</li>
                   <li>打开「在共享表单中显示」。</li>
                   <li>
@@ -424,7 +424,7 @@ export function MobileShareTokenCard({
                     （保持私密）。
                   </li>
                   <li>
-                    不需要手动拆链接：Pocket
+                    不需要手动拆链接：网兜
                     会从文本里自动抽取第一个网址；没有网址就存成文字收藏。
                   </li>
                 </ol>
@@ -434,16 +434,16 @@ export function MobileShareTokenCard({
                 <ol className="mt-1 list-decimal space-y-1 pl-4">
                   <li>点右上角「完成」。</li>
                   <li>打开 Safari 任意网页 → 底部分享按钮。</li>
-                  <li>在分享菜单中找到「收藏到 Pocket」并点选。</li>
-                  <li>回到 Pocket「我的收藏」，确认已出现该内容。</li>
-                  <li>X App 同理：帖子分享菜单里选「收藏到 Pocket」。</li>
+                  <li>在分享菜单中找到「收藏到网兜」并点选。</li>
+                  <li>回到网兜「我的收藏」，确认已出现该内容。</li>
+                  <li>X App 同理：帖子分享菜单里选「收藏到网兜」。</li>
                 </ol>
               </GuideStep>
 
               <div className="rounded-md border border-dashed bg-muted/20 p-3 text-xs">
                 <p className="font-medium text-foreground">排错</p>
                 <ul className="mt-1.5 space-y-1">
-                  <li>分享菜单没有 Pocket：检查是否打开「在共享表单中显示」，并勾选 URL / 文本。</li>
+                  <li>分享菜单没有网兜：检查是否打开「在共享表单中显示」，并勾选 URL / 文本。</li>
                   <li>返回 401：Token 错了或已撤销，重新生成后再改 Authorization。</li>
                   <li>完全没反应：确认请求地址是当前网站的生产域名，手机能打开该网站。</li>
                 </ul>

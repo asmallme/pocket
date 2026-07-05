@@ -393,7 +393,7 @@ export async function unfurl(
       headers: {
         "User-Agent": isWeixin
           ? WECHAT_USER_AGENT
-          : "Mozilla/5.0 (compatible; PocketBot/1.0; +https://pocket.example.com)",
+          : "Mozilla/5.0 (compatible; WangdouBot/1.0; +https://wangdou.app)",
         Accept: "text/html,application/xhtml+xml",
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
       },

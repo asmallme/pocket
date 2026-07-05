@@ -179,9 +179,9 @@ async function feedback(
   }, 2500);
 
   if (status === "saved") {
-    await browser.action.setTitle({ title: "Pocket · 已收藏", tabId });
+    await browser.action.setTitle({ title: "网兜 · 已收藏", tabId });
     setTimeout(() => {
-      void browser.action.setTitle({ title: "Pocket 收藏", tabId });
+      void browser.action.setTitle({ title: "网兜收藏", tabId });
     }, 2000);
   }
 
@@ -189,14 +189,14 @@ async function feedback(
     saved: null, // 角标已足够
     duplicate: "这个链接已经收藏过了",
     queued: "保存失败，已暂存，恢复后自动重试",
-    unauthenticated: "请先点击 Pocket 插件图标登录",
+    unauthenticated: "请先点击网兜插件图标登录",
   };
   const message = messages[status];
   if (message) {
     await browser.notifications.create({
       type: "basic",
       iconUrl: browser.runtime.getURL("/icon/128.png"),
-      title: "Pocket",
+      title: "网兜",
       message,
     });
   }

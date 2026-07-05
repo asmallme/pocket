@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export const metadata = {
   title: "用户协议",
-  description: "使用 Pocket 前请阅读本协议。",
+  description: "使用网兜前请阅读本协议。",
 };
 
 const UPDATED_AT = "2026年7月3日";
@@ -14,13 +14,13 @@ export default function TermsPage() {
       <p className="text-sm text-muted-foreground">最近更新：{UPDATED_AT}</p>
 
       <p>
-        欢迎使用 Pocket。本协议是你与 Pocket（以下简称「本产品」）之间关于使用本产品服务的约定。
+        欢迎使用网兜。本协议是你与网兜（以下简称「本产品」）之间关于使用本产品服务的约定。
         注册或使用本产品即表示你已阅读并同意本协议。
       </p>
 
       <h2>一、服务说明</h2>
       <p>
-        Pocket 提供内容收藏、整理与分享服务，包括网页端、浏览器插件和移动端 PWA。
+        网兜提供内容收藏、整理与分享服务，包括网页端、浏览器插件和移动端 PWA。
         你可以收藏链接、文字和图片，选择公开分享或私密保存，并与其他用户互动。
       </p>
 

@@ -9,7 +9,7 @@ const STORAGE_KEY = "pocket:last-clipboard-url";
 /**
  * On focus, checks the clipboard for a URL and offers to save it.
  * This is the main mobile capture entry point: copy a link in any app,
- * then open Pocket.
+ * then open 网兜.
  */
 export function ClipboardDetector() {
   const router = useRouter();

@@ -27,7 +27,7 @@ export function SiteFooter() {
             className="flex items-center gap-1.5 font-semibold tracking-tight text-foreground transition-opacity hover:opacity-80"
           >
             <Bookmark className="size-3.5 text-primary" />
-            Pocket
+            网兜
           </Link>
           <p className="max-w-xs text-center text-xs leading-relaxed text-muted-foreground md:text-left">
             收藏你在全网看到的好内容，分享给同样热爱阅读的人。
@@ -61,7 +61,7 @@ export function SiteFooter() {
       </div>
 
       <p className="mt-5 text-center text-[11px] text-muted-foreground/70 md:text-left">
-        © {year} Pocket
+        © {year} 网兜
       </p>
     </footer>
   );

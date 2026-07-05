@@ -21,7 +21,7 @@
 
 **产品名称**
 
-> Pocket
+> 网兜
 
 **一句话介绍（Tagline）**
 
@@ -29,19 +29,19 @@
 
 **短描述（约 80 字，用于 OAuth 同意屏幕 / 应用商店简介）**
 
-> Pocket 是一款内容收藏与分享工具。通过浏览器插件、手机分享菜单一键收藏网页、文字和图片，AI 自动生成摘要与标签；你可以私密保存，也可以附上推荐语公开分享，在安静的信息流里发现值得读的内容。
+> 网兜是一款内容收藏与分享工具。通过浏览器插件、手机分享菜单一键收藏网页、文字和图片，AI 自动生成摘要与标签；你可以私密保存，也可以附上推荐语公开分享，在安静的信息流里发现值得读的内容。
 
 **长描述（用于 Chrome Web Store / 详细介绍）**
 
-> Pocket 让「收藏」这个动作发生在内容出现的任何地方：浏览器里点一下图标、手机上点一下分享，一条带标题、摘要和封面的收藏卡片就存好了。
+> 网兜让「收藏」这个动作发生在内容出现的任何地方：浏览器里点一下图标、手机上点一下分享，一条带标题、摘要和封面的收藏卡片就存好了。
 >
 > 收藏之后，AI 会在后台自动生成摘要和标签建议，你无需手动整理；「随机未读」和「温故知新」帮你把积压的收藏重新捞出来读完。
 >
-> 每条收藏都可以选择私密保存或公开分享。公开时写下你的推荐语，它会以金句排版出现在信息流里——在 Pocket，观点先于链接。关注你信任的人、订阅你关心的标签，没有算法插队的安静阅读流。
+> 每条收藏都可以选择私密保存或公开分享。公开时写下你的推荐语，它会以金句排版出现在信息流里——在网兜，观点先于链接。关注你信任的人、订阅你关心的标签，没有算法插队的安静阅读流。
 
 **英文短描述（如需）**
 
-> Pocket is a bookmarking and content-sharing tool. Save web pages, text, and images in one click via the browser extension or mobile share sheet. AI summarizes and tags your saves in the background. Keep them private, or share with a note in a calm, algorithm-free feed.
+> Scoop (网兜) is a bookmarking and content-sharing tool. Save web pages, text, and images in one click via the browser extension or mobile share sheet. AI summarizes and tags your saves in the background. Keep them private, or share with a note in a calm, algorithm-free feed.
 
 ## Google OAuth（Google Cloud Console）
 
@@ -49,7 +49,7 @@
 
 | 字段 | 填写内容 |
 | --- | --- |
-| App name | `Pocket` |
+| App name | `网兜` |
 | App logo | 上传 `docs/brand/logo-120.png` |
 | User support email | 你的联系邮箱 |
 | App domain - Home page | `https://<你的域名>` |
@@ -73,7 +73,7 @@
 
 | 字段 | 填写内容 |
 | --- | --- |
-| Application name | `Pocket` |
+| Application name | `网兜` |
 | Homepage URL | `https://<你的域名>` |
 | Application description | 使用上文「短描述」 |
 | Authorization callback URL | `https://<项目 ref>.supabase.co/auth/v1/callback` |
@@ -83,7 +83,7 @@
 
 ## 权限说明（审核时可能被问到）
 
-- 我们只请求基础身份信息（邮箱、昵称、头像），用于创建和识别 Pocket 账号；
+- 我们只请求基础身份信息（邮箱、昵称、头像），用于创建和识别网兜账号；
 - 不读取用户在 GitHub / Google 的任何其它数据（仓库、邮件、云端硬盘等）；
 - 数据使用方式详见隐私政策：`https://<你的域名>/privacy`。
 

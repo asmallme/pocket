@@ -21,8 +21,8 @@ const webOrigins = Array.from(
 export default defineConfig({
   modules: ["@wxt-dev/module-react"],
   manifest: {
-    name: "Pocket 收藏",
-    description: "一键收藏当前页面到 Pocket",
+    name: "网兜收藏",
+    description: "一键收藏当前页面到网兜",
     permissions: [
       "activeTab",
       "scripting",

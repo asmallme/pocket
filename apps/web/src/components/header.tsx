@@ -35,7 +35,7 @@ export async function Header() {
           className="flex shrink-0 items-center gap-2 font-semibold tracking-tight"
         >
           <Bookmark className="size-[18px] text-primary md:size-5" />
-          <span className="text-base md:text-lg">Pocket</span>
+          <span className="text-base md:text-lg">网兜</span>
         </Link>
 
         {profile && <MainNav />}

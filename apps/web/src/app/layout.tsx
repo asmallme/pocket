@@ -23,14 +23,14 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Pocket - 收藏与发现",
-    template: "%s | Pocket",
+    default: "网兜 - 收藏与发现",
+    template: "%s | 网兜",
   },
   description: "收藏你在全网看到的好内容，分享给同样热爱阅读的人。",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    title: "Pocket",
+    title: "网兜",
     statusBarStyle: "default",
   },
   verification: {

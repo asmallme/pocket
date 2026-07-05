@@ -9,7 +9,7 @@ export default function LoginPage() {
     <div className="mx-auto mt-12 max-w-sm">
       <p className="mb-4 text-center text-sm text-muted-foreground">
         <Link href="/about" className="font-medium text-primary underline-offset-2 hover:underline">
-          了解 Pocket 能做什么 →
+          了解网兜能做什么 →
         </Link>
       </p>
       <Suspense>

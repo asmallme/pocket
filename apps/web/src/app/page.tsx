@@ -39,7 +39,7 @@ export default async function HomePage({
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             一键收藏、金句策展、标签订阅——在安静的信息流里，快速判断什么值得读。
             <Link href="/about" className="ml-1 font-medium text-primary underline-offset-2 hover:underline">
-              了解 Pocket
+              了解网兜
             </Link>
             <span className="mx-1 text-border">·</span>
             <Link href="/login" className="font-medium text-primary underline-offset-2 hover:underline">

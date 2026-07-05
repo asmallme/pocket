@@ -148,14 +148,14 @@ export function App() {
   if (!session) {
     return (
       <div className="app">
-        <h1 className="logo">Pocket</h1>
+        <h1 className="logo">网兜</h1>
         <p className="hint">登录后即可一键收藏当前页面</p>
 
         <button className="primary" onClick={handleWebLogin}>
           使用网页账号登录
         </button>
         <p className="hint small">
-          将打开 Pocket 网站完成授权，网页已登录则一键完成
+          将打开网兜网站完成授权，网页已登录则一键完成
         </p>
 
         {showEmailLogin ? (
@@ -203,7 +203,7 @@ export function App() {
       )}
 
       <div className="topbar">
-        <h1 className="logo">Pocket</h1>
+        <h1 className="logo">网兜</h1>
         <div className="topbar-actions">
           <button
             type="button"

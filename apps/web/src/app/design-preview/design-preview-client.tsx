@@ -62,7 +62,7 @@ function ThemePreview({
         <div className="flex items-center justify-between border-b border-[var(--border)] bg-[var(--background)]/90 px-4 py-3 backdrop-blur-sm">
           <div className="flex items-center gap-2 font-semibold tracking-tight">
             <Bookmark className="size-4 text-[var(--primary)]" />
-            Pocket
+            网兜
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -191,7 +191,7 @@ export function DesignPreviewClient() {
       <div className="space-y-2">
         <p className="text-sm text-muted-foreground">UI 方向预览 · 仅供选型</p>
         <h1 className="text-2xl font-semibold tracking-tight">
-          Pocket 视觉方向
+          网兜视觉方向
         </h1>
         <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
           围绕「策展阅读、安静边界、金句判断」四个方向各做一套 token。

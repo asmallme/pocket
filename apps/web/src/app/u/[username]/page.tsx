@@ -26,7 +26,7 @@ export async function generateMetadata({
   if (!data) return { title: "用户" };
 
   const name = data.display_name ?? data.username;
-  const description = data.bio ?? `${name} 在 Pocket 上的收藏`;
+  const description = data.bio ?? `${name} 在网兜上的收藏`;
   return {
     title: `${name} (@${data.username})`,
     description,

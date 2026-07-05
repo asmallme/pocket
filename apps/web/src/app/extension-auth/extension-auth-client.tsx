@@ -79,7 +79,7 @@ export function ExtensionAuthClient({
         <CardHeader>
           <CardTitle>授权插件登录</CardTitle>
           <CardDescription>
-            请从 Pocket 浏览器插件中点击「使用网页账号登录」打开本页面
+            请从网兜浏览器插件中点击「使用网页账号登录」打开本页面
           </CardDescription>
         </CardHeader>
       </Card>
@@ -95,7 +95,7 @@ export function ExtensionAuthClient({
         </CardTitle>
         <CardDescription>
           将以 <span className="font-medium text-foreground">{email}</span>{" "}
-          的身份登录 Pocket 浏览器插件
+          的身份登录网兜浏览器插件
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">

@@ -1,4 +1,4 @@
-# Pocket 正式发布检查清单
+# 网兜正式发布检查清单
 
 > 基于 v1.0–v1.3 功能现状整理。完成一项可在 `[ ]` 中打 `x`：`[x]`。
 
@@ -206,8 +206,8 @@ Dashboard → **Authentication → URL Configuration**：
 
 - [ ] 底栏导航（发现 / 我的 / 收藏 / 标签）
 - [ ] PWA 添加到主屏幕
-- [ ] 系统分享到 Pocket（share target）
-- [ ] iOS 快捷指令：Safari / X App 分享链接或文本到 Pocket
+- [ ] 系统分享到网兜（share target）
+- [ ] iOS 快捷指令：Safari / X App 分享链接或文本到网兜
 
 ---
 

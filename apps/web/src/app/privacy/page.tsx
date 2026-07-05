@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export const metadata = {
   title: "隐私政策",
-  description: "Pocket 如何收集、使用和保护你的数据。",
+  description: "网兜如何收集、使用和保护你的数据。",
 };
 
 const UPDATED_AT = "2026年7月3日";
@@ -14,7 +14,7 @@ export default function PrivacyPage() {
       <p className="text-sm text-muted-foreground">最近更新：{UPDATED_AT}</p>
 
       <p>
-        Pocket（以下简称「本产品」或「我们」）是一款内容收藏与分享工具。我们深知隐私对你的重要性，
+        网兜（以下简称「本产品」或「我们」）是一款内容收藏与分享工具。我们深知隐私对你的重要性，
         本政策说明我们收集哪些信息、为什么收集、如何使用，以及你对自己数据拥有的控制权。
         我们遵循一条简单的原则：<strong>只收集提供服务所必需的信息，绝不出售你的数据。</strong>
       </p>
@@ -70,7 +70,7 @@ export default function PrivacyPage() {
       </ul>
 
       <h2>四、浏览器插件的权限说明</h2>
-      <p>Pocket 浏览器插件申请的权限均为实现「一键收藏」所必需：</p>
+      <p>网兜浏览器插件申请的权限均为实现「一键收藏」所必需：</p>
       <ul>
         <li>
           <strong>读取当前页面：</strong>仅在你主动点击收藏（或使用右键菜单、快捷键）时读取当前页面的

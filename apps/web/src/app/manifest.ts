@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Pocket - 收藏与发现",
-    short_name: "Pocket",
+    name: "网兜 - 收藏与发现",
+    short_name: "网兜",
     description: "收藏你在全网看到的好内容，分享给同样热爱阅读的人。",
     start_url: "/",
     display: "standalone",

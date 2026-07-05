@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 export const metadata: Metadata = {
   title: "产品介绍",
   description:
-    "Pocket 让收藏毫不费力，让好内容因人的推荐而流动——一键收藏、AI 整理、安静的信息流。",
+    "网兜让收藏毫不费力，让好内容因人的推荐而流动——一键收藏、AI 整理、安静的信息流。",
 };
 
 const pillars = [
@@ -24,11 +24,11 @@ const pillars = [
     icon: Globe,
     title: "收藏应该发生在内容出现的地方",
     intro:
-      "值得收藏的东西不会等你打开某个 App 才出现，所以 Pocket 把收藏入口铺到了每一个场景：",
+      "值得收藏的东西不会等你打开某个 App 才出现，所以网兜把收藏入口铺到了每一个场景：",
     points: [
       "浏览器插件：点击图标、右键菜单、快捷键 Cmd/Ctrl+Shift+S，收藏当前页面、选中的文字、图片或链接",
-      "手机分享菜单：PWA 支持系统级 Share Target，在任何 App 里点「分享 → Pocket」即可收藏",
-      "剪贴板识别：复制了一个链接再打开 Pocket？它会主动问你要不要存下来",
+      "手机分享菜单：PWA 支持系统级 Share Target，在任何 App 里点「分享 → 网兜」即可收藏",
+      "剪贴板识别：复制了一个链接再打开网兜？它会主动问你要不要存下来",
     ],
     footnote:
       "针对 X、微信公众号、知乎、B站、Hacker News、Reddit、少数派等站点做了帖子级内容提取——收藏下来的不是光秃秃的 URL，而是带标题、摘要、封面的完整卡片。",
@@ -36,7 +36,7 @@ const pillars = [
   {
     icon: Sparkles,
     title: "收藏不是终点，被再次读到才是",
-    intro: "大多数收藏工具的问题在于「存进去就死了」。Pocket 在两端发力：",
+    intro: "大多数收藏工具的问题在于「存进去就死了」。网兜在两端发力：",
     points: [
       "AI 在后台默默整理：收藏保存后，AI 异步生成摘要和标签建议，不打断你的操作，打开列表时一切已经就绪",
       "对抗「收藏夹坟场」：「随机未读」帮你从积压里捞出一条重读；「温故知新」定期翻出一年前的收藏",
@@ -47,7 +47,7 @@ const pillars = [
   {
     icon: MessageSquareQuote,
     title: "一个安静的、以推荐语为中心的社区",
-    intro: "Pocket 的社区部分刻意做得「慢」：",
+    intro: "网兜的社区部分刻意做得「慢」：",
     points: [
       "推荐语（金句）优先：你写下的「为什么值得读」以金句排版呈现在信息流最显眼处——观点先于链接",
       "三条信息流：「发现」看全站、「关注」看你信任的人、「标签订阅」只看你关心的主题，没有算法插队",
@@ -81,14 +81,14 @@ export default function AboutPage() {
       <section className="text-center">
         <Image
           src="/icons/icon-192.png"
-          alt="Pocket"
+          alt="网兜"
           width={72}
           height={72}
           className="mx-auto rounded-2xl"
           priority
         />
         <h1 className="mt-4 font-quote text-2xl font-semibold tracking-tight md:text-3xl">
-          Pocket
+          网兜
         </h1>
         <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground md:text-base">
           收藏你在全网看到的好内容，分享给同样热爱阅读的人。
@@ -104,14 +104,14 @@ export default function AboutPage() {
       </section>
 
       <section className="rounded-[var(--radius)] border border-border/80 bg-card px-5 py-6 md:px-7 md:py-8">
-        <h2 className="font-quote text-lg font-semibold md:text-xl">为什么做 Pocket</h2>
+        <h2 className="font-quote text-lg font-semibold md:text-xl">为什么做网兜</h2>
         <div className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground md:text-[0.9375rem]">
           <p>
             每个人的浏览器收藏夹里，都躺着几百条「以后再看」——然后再也没有打开过。
             与此同时，我们每天在信息流里刷到的东西越来越多，真正值得读的却越来越难被发现。
           </p>
           <p>
-            Pocket 想解决的就是这两件事：
+            网兜想解决的就是这两件事：
             <strong className="font-medium text-foreground">
               让收藏这个动作变得毫不费力，让好内容因为「人的推荐」而流动起来。
             </strong>
