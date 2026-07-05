@@ -147,7 +147,8 @@ function decodeHtmlBytes(bytes: Uint8Array, contentType: string): string {
 
 async function readBodyBytes(
   res: Response,
-  limit = 512 * 1024
+  limit = 512 * 1024,
+  readFullBody = false
 ): Promise<Uint8Array> {
   const reader = res.body?.getReader();
   if (!reader) {
@@ -166,9 +167,22 @@ async function readBodyBytes(
     chunks.push(next);
     total += next.length;
     headLatin1 += new TextDecoder("latin1").decode(next);
-    // head 结束即可，meta 都在前面
-    if (headLatin1.includes("</head>") || headLatin1.includes("</HEAD>")) {
-      break;
+    if (!readFullBody) {
+      // 通用链接：head 里的 meta 足够
+      if (headLatin1.includes("</head>") || headLatin1.includes("</HEAD>")) {
+        break;
+      }
+    } else {
+      const contentStart = headLatin1.indexOf('id="js_content"');
+      if (contentStart >= 0) {
+        const afterContent = headLatin1.slice(contentStart);
+        // 正文区结束于紧随其后的 </div><script
+        if (/<\/div>\s*<script/i.test(afterContent)) {
+          break;
+        }
+        // 已读到正文开头但尚未结束，继续拉取
+        if (afterContent.length > 120_000) break;
+      }
     }
   }
   reader.cancel().catch(() => {});
@@ -189,10 +203,141 @@ function cleanText(value: string | null): string | null {
   return text;
 }
 
+const WECHAT_USER_AGENT =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.49 NetType/WIFI Language/zh_CN";
+
+/** 微信文章正文区通常在 500KB+ 处，需多读一些 HTML。 */
+const WECHAT_READ_LIMIT = 896 * 1024;
+
+function isWeixinArticleUrl(url: URL): boolean {
+  return url.hostname === "mp.weixin.qq.com" && /^\/s(\/|$)/.test(url.pathname);
+}
+
+function extractScriptVar(html: string, name: string): string | null {
+  const patterns = [
+    new RegExp(`var\\s+${name}\\s*=\\s*'([^']*)'`, "i"),
+    new RegExp(`var\\s+${name}\\s*=\\s*"([^"]*)"`, "i"),
+    new RegExp(`var\\s+${name}\\s*=\\s*htmlDecode\\("([^"]*)"\\)`, "i"),
+  ];
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match?.[1]) return decodeEntities(match[1].trim());
+  }
+  return null;
+}
+
+function extractElementInnerText(html: string, id: string): string | null {
+  const match = html.match(
+    new RegExp(`id="${id}"[^>]*>([\\s\\S]*?)<\\/(?:h1|a|span|div|p|section)>`, "i")
+  );
+  if (!match?.[1]) return null;
+  return cleanText(match[1].replace(/<[^>]+>/g, " "));
+}
+
+function stripHtmlToText(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]+/g, " ")
+    .trim();
+}
+
+const WECHAT_INTRO_SKIP =
+  /^(?:Hi[～~].*关注我们|点击下方.*阅读原文|点击上方.*关注我们|长按.*识别|阅读原文|在看|分享|收藏|点赞)/;
+
+function extractWeixinContentIntro(html: string, maxLen = 300): string | null {
+  const match = html.match(/id="js_content"[^>]*>([\s\S]*?)<\/div>\s*<script/i);
+  if (!match?.[1]) return null;
+
+  const paragraphs = stripHtmlToText(match[1])
+    .split(/\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  for (const paragraph of paragraphs) {
+    if (paragraph.length < 20) continue;
+    if (WECHAT_INTRO_SKIP.test(paragraph)) continue;
+    return paragraph.slice(0, maxLen);
+  }
+
+  const fallback = paragraphs.find((p) => p.length >= 20);
+  return fallback ? fallback.slice(0, maxLen) : null;
+}
+
+function isWeixinBlocked(html: string): boolean {
+  return (
+    /环境异常|secitptpage|verifybar|captcha/i.test(html) &&
+    !/id="js_content"/i.test(html)
+  );
+}
+
+function parseWeixinArticle(html: string, baseUrl: URL): UnfurlResult {
+  const title =
+    extractMeta(html, "og:title") ??
+    extractScriptVar(html, "msg_title") ??
+    extractElementInnerText(html, "activity-name");
+
+  const author =
+    extractMeta(html, "og:article:author") ??
+    extractMeta(html, "author") ??
+    extractElementInnerText(html, "js_name");
+
+  let description =
+    extractMeta(html, "og:description") ??
+    extractScriptVar(html, "msg_desc") ??
+    extractWeixinContentIntro(html);
+
+  if (author && description && !description.includes(author)) {
+    description = `${author} · ${description}`;
+  } else if (author && !description) {
+    description = `公众号：${author}`;
+  }
+
+  let image =
+    extractMeta(html, "og:image") ??
+    extractMeta(html, "twitter:image") ??
+    extractScriptVar(html, "msg_cdn_url");
+
+  if (image && !image.startsWith("http")) {
+    try {
+      image = new URL(image, baseUrl).toString();
+    } catch {
+      image = null;
+    }
+  }
+
+  if (!image) {
+    const imgMatch = html.match(
+      /id="js_content"[\s\S]{0,8000}?data-src="([^"]+)"/i
+    );
+    if (imgMatch?.[1]) {
+      try {
+        image = new URL(decodeEntities(imgMatch[1]), baseUrl).toString();
+      } catch {
+        image = null;
+      }
+    }
+  }
+
+  return {
+    url: baseUrl.toString(),
+    title: cleanText(title),
+    description: cleanText(description),
+    image,
+    siteName: cleanText(author) ?? "微信公众号",
+  };
+}
+
 export async function unfurl(rawUrl: string): Promise<UnfurlResult> {
   const url = isSafeUrl(rawUrl);
   if (!url) throw new Error("无效的链接");
 
+  const isWeixin = isWeixinArticleUrl(url);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8000);
 
@@ -201,8 +346,9 @@ export async function unfurl(rawUrl: string): Promise<UnfurlResult> {
       signal: controller.signal,
       redirect: "follow",
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; PocketBot/1.0; +https://pocket.example.com)",
+        "User-Agent": isWeixin
+          ? WECHAT_USER_AGENT
+          : "Mozilla/5.0 (compatible; PocketBot/1.0; +https://pocket.example.com)",
         Accept: "text/html,application/xhtml+xml",
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
       },
@@ -219,8 +365,25 @@ export async function unfurl(rawUrl: string): Promise<UnfurlResult> {
       };
     }
 
-    const bytes = await readBodyBytes(res);
-    const html = decodeHtmlBytes(bytes, contentType);
+    const bytes = await readBodyBytes(
+      res,
+      isWeixin ? WECHAT_READ_LIMIT : 512 * 1024,
+      isWeixin
+    );
+    const html = decodeHtmlBytes(bytes, contentType).replace(/\0/g, "");
+
+    if (isWeixin) {
+      if (isWeixinBlocked(html)) {
+        return {
+          url: url.toString(),
+          title: null,
+          description: null,
+          image: null,
+          siteName: "微信公众号",
+        };
+      }
+      return parseWeixinArticle(html, url);
+    }
 
     const titleTag = html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1]?.trim();
     let image =

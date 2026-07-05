@@ -63,10 +63,18 @@ export function extractPageData(): ExtractedPage {
         .querySelector("#activity-name")
         ?.textContent?.trim();
       const author = document.querySelector("#js_name")?.textContent?.trim();
+      const contentEl = document.querySelector("#js_content");
       const firstImg = document.querySelector<HTMLImageElement>(
         "#js_content img"
       );
       if (title) result.title = title;
+      if (contentEl) {
+        const intro = contentEl.innerText
+          .split(/\n+/)
+          .map((p) => p.trim())
+          .find((p) => p.length >= 20);
+        if (intro) result.description = intro.slice(0, 300);
+      }
       if (author) {
         result.description = result.description
           ? `${author} · ${result.description}`
