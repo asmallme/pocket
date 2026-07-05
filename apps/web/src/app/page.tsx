@@ -21,13 +21,14 @@ export default async function HomePage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const globalPage = await fetchFeed(supabase, {
-    scope: tagSlug ? "tag" : "global",
-    tagSlug: tagSlug ?? null,
-    viewerId: user?.id ?? null,
-  });
-
-  const popularTags = await fetchPopularTags(supabase, 16);
+  const [globalPage, popularTags] = await Promise.all([
+    fetchFeed(supabase, {
+      scope: tagSlug ? "tag" : "global",
+      tagSlug: tagSlug ?? null,
+      viewerId: user?.id ?? null,
+    }),
+    fetchPopularTags(supabase, 16),
+  ]);
 
   if (!user) {
     return (

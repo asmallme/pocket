@@ -103,39 +103,40 @@ export async function fetchFeed(
     items = items.filter((b) => !b.removed_at);
   }
 
-  const tagMap = await fetchTagsForBookmarks(
-    supabase,
-    items.map((b) => b.id)
-  );
+  const ids = items.map((b) => b.id);
+  const urls = items.map((b) => b.url).filter((u): u is string => Boolean(u));
+  const withViewer = Boolean(options.viewerId) && items.length > 0;
+
+  const [tagMap, { data: likes }, { data: ownByRepost }, { data: ownByUrl }] =
+    await Promise.all([
+      fetchTagsForBookmarks(supabase, ids),
+      withViewer
+        ? supabase
+            .from("likes")
+            .select("bookmark_id")
+            .eq("user_id", options.viewerId!)
+            .in("bookmark_id", ids)
+        : Promise.resolve({ data: [] as { bookmark_id: string }[] }),
+      withViewer
+        ? supabase
+            .from("bookmarks")
+            .select("id, reposted_from")
+            .eq("user_id", options.viewerId!)
+            .in("reposted_from", ids)
+        : Promise.resolve({ data: [] as { id: string; reposted_from: string | null }[] }),
+      withViewer && urls.length > 0
+        ? supabase
+            .from("bookmarks")
+            .select("id, url")
+            .eq("user_id", options.viewerId!)
+            .in("url", urls)
+        : Promise.resolve({ data: [] as { id: string; url: string }[] }),
+    ]);
   items = items.map((b) => ({ ...b, tags: tagMap.get(b.id) ?? [] }));
 
   let likedIds: string[] = [];
   const repostedIds: Record<string, string> = {};
-  if (options.viewerId && items.length > 0) {
-    const ids = items.map((b) => b.id);
-    const urls = items
-      .map((b) => b.url)
-      .filter((u): u is string => Boolean(u));
-    const [{ data: likes }, { data: ownByRepost }, { data: ownByUrl }] =
-      await Promise.all([
-        supabase
-          .from("likes")
-          .select("bookmark_id")
-          .eq("user_id", options.viewerId)
-          .in("bookmark_id", ids),
-        supabase
-          .from("bookmarks")
-          .select("id, reposted_from")
-          .eq("user_id", options.viewerId)
-          .in("reposted_from", ids),
-        urls.length > 0
-          ? supabase
-              .from("bookmarks")
-              .select("id, url")
-              .eq("user_id", options.viewerId)
-              .in("url", urls)
-          : Promise.resolve({ data: [] as { id: string; url: string }[] }),
-      ]);
+  if (withViewer) {
     likedIds = (likes ?? []).map((l) => l.bookmark_id);
 
     const repostMap = new Map<string, string>();
