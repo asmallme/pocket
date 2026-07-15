@@ -6,7 +6,9 @@ export type BookmarkSource =
   | "contextmenu"
   | "shortcut"
   | "pwa-share"
-  | "repost";
+  | "repost"
+  | "ios"
+  | "ios-share";
 
 export interface Tag {
   id: string;

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Tag } from "@pocket/shared";
+import { fetchTagsForBookmarks } from "@pocket/shared/feed";
 import { normalizeTagName, toTagSlug } from "./tags";
 
 /** 按名称 upsert tag 并关联到收藏。 */
@@ -58,32 +59,8 @@ export async function replaceBookmarkTags(
   return attachTagsToBookmark(supabase, bookmarkId, names);
 }
 
-/** 批量查询收藏的标签。 */
-export async function fetchTagsForBookmarks(
-  supabase: SupabaseClient,
-  bookmarkIds: string[]
-): Promise<Map<string, Tag[]>> {
-  const map = new Map<string, Tag[]>();
-  if (bookmarkIds.length === 0) return map;
-
-  const { data } = await supabase
-    .from("bookmark_tags")
-    .select("bookmark_id, tag:tags(id, name, slug)")
-    .in("bookmark_id", bookmarkIds);
-
-  for (const row of data ?? []) {
-    const bid = row.bookmark_id as string;
-    const tag = (row as unknown as { tag: Tag | Tag[] }).tag;
-    const tags = Array.isArray(tag) ? tag : tag ? [tag] : [];
-    for (const t of tags) {
-      if (!t) continue;
-      const list = map.get(bid) ?? [];
-      list.push(t);
-      map.set(bid, list);
-    }
-  }
-  return map;
-}
+/** 批量查询收藏的标签（实现在 @pocket/shared/feed，双端共用）。 */
+export { fetchTagsForBookmarks };
 
 /** 获取用户主页常出现的 tag（公开收藏）。 */
 export async function fetchUserTopTags(
