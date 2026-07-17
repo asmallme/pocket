@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import * as AppleAuthentication from "expo-apple-authentication";
-import { Radius, Spacing } from "@/constants/theme";
+import { Radius, SerifFont, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
@@ -208,9 +208,11 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   logo: {
-    fontSize: 32,
+    fontFamily: SerifFont,
+    fontSize: 34,
     fontWeight: "700",
     textAlign: "center",
+    letterSpacing: 2,
     marginTop: Spacing.xl,
   },
   hint: {

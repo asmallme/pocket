@@ -15,6 +15,7 @@ import {
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Clipboard from "expo-clipboard";
+import * as Haptics from "expo-haptics";
 import type { UnfurlResult } from "@pocket/shared";
 import { Radius, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
@@ -114,6 +115,9 @@ export default function SaveScreen() {
     });
     setSaving(false);
 
+    if (result.status === "saved") {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
     if (result.status === "saved" || result.status === "duplicate") {
       setRawInput("");
       setUrl(null);
