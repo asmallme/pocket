@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
+import { SymbolView } from "expo-symbols";
 import type { Profile } from "@pocket/shared";
 import { R, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
@@ -125,6 +126,17 @@ export function ProfileHeader({ profile }: { profile: Profile }) {
 
   const name = profile.display_name ?? profile.username;
 
+  function showMoreActions() {
+    Alert.alert(name, undefined, [
+      {
+        text: blocked ? "取消拉黑" : "拉黑该用户",
+        style: blocked ? "default" : "destructive",
+        onPress: toggleBlock,
+      },
+      { text: "取消", style: "cancel" },
+    ]);
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.topRow}>
@@ -146,7 +158,7 @@ export function ProfileHeader({ profile }: { profile: Profile }) {
           </Text>
         </View>
         {!isSelf ? (
-          <View style={{ alignItems: "flex-end", gap: Spacing.sm }}>
+          <View style={styles.actionsRow}>
             <PressableScale
               haptic
               style={[
@@ -173,11 +185,20 @@ export function ProfileHeader({ profile }: { profile: Profile }) {
                 {following ? "已关注" : "关注"}
               </Text>
             </PressableScale>
-            <Pressable onPress={toggleBlock} hitSlop={8}>
-              <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>
-                {blocked ? "取消拉黑" : "拉黑"}
-              </Text>
-            </Pressable>
+            {/* 低频操作收进「···」菜单，不裸露在页面上 */}
+            <PressableScale
+              scaleTo={0.88}
+              hitSlop={8}
+              onPress={showMoreActions}
+              accessibilityLabel="更多操作"
+              style={[styles.moreButton, { backgroundColor: colors.muted }]}
+            >
+              <SymbolView
+                name="ellipsis"
+                tintColor={colors.mutedForeground}
+                size={16}
+              />
+            </PressableScale>
           </View>
         ) : null}
       </View>
@@ -250,6 +271,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
     borderRadius: R.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  actionsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  moreButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
   },
