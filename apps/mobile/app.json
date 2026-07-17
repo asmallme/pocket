@@ -14,7 +14,8 @@
       "supportsTablet": false,
       "usesAppleSignIn": true,
       "infoPlist": {
-        "CFBundleDevelopmentRegion": "zh_CN"
+        "CFBundleDevelopmentRegion": "zh_CN",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
