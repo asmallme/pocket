@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+} from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -6,10 +12,11 @@ import {
   StyleSheet,
   Text,
   View,
+  type ListRenderItemInfo,
 } from "react-native";
 import type { BookmarkWithAuthor } from "@pocket/shared";
 import { fetchFeed, type FeedOptions } from "@pocket/shared/feed";
-import { Spacing } from "@/constants/theme";
+import { DOCK_SPACE, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
@@ -21,6 +28,10 @@ interface Props {
   userId?: string;
   includePrivate?: boolean;
   emptyText?: string;
+  /** 随列表一起滚动的头部（如个人资料卡） */
+  header?: ReactElement;
+  /** 底部是否为悬浮 Dock 预留空间（tab 页为 true） */
+  dockSpace?: boolean;
 }
 
 export function FeedList({
@@ -29,6 +40,8 @@ export function FeedList({
   userId,
   includePrivate,
   emptyText = "还没有内容",
+  header,
+  dockSpace = false,
 }: Props) {
   const colors = useTheme();
   const { session, ready } = useAuth();
@@ -97,10 +110,22 @@ export function FeedList({
     setLoadingMore(false);
   }
 
+  const renderItem = useCallback(
+    ({ item }: ListRenderItemInfo<BookmarkWithAuthor>) => (
+      <BookmarkCard
+        bookmark={item}
+        likedByViewer={likedIds.has(item.id)}
+        repostedByViewerId={repostedIds[item.id] ?? null}
+      />
+    ),
+    [likedIds, repostedIds]
+  );
+
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator />
+        {header}
+        <ActivityIndicator style={{ marginTop: Spacing.xl }} />
       </View>
     );
   }
@@ -109,19 +134,26 @@ export function FeedList({
     <FlatList
       data={items}
       keyExtractor={(b) => b.id}
-      renderItem={({ item }) => (
-        <BookmarkCard
-          bookmark={item}
-          likedByViewer={likedIds.has(item.id)}
-          repostedByViewerId={repostedIds[item.id] ?? null}
-        />
-      )}
-      contentContainerStyle={styles.list}
+      renderItem={renderItem}
+      ListHeaderComponent={header}
+      contentContainerStyle={[
+        styles.list,
+        dockSpace && { paddingBottom: DOCK_SPACE },
+      ]}
+      // 滚动流畅性：小批量渲染 + 适中窗口 + 回收屏外视图
+      initialNumToRender={6}
+      maxToRenderPerBatch={5}
+      updateCellsBatchingPeriod={40}
+      windowSize={9}
+      removeClippedSubviews
+      scrollIndicatorInsets={
+        dockSpace ? { bottom: DOCK_SPACE - Spacing.xl } : undefined
+      }
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
       onEndReached={onEndReached}
-      onEndReachedThreshold={0.5}
+      onEndReachedThreshold={0.6}
       ListEmptyComponent={
         <View style={styles.center}>
           <Text style={{ color: colors.mutedForeground }}>
@@ -141,7 +173,7 @@ export function FeedList({
 const styles = StyleSheet.create({
   list: {
     padding: Spacing.lg,
-    gap: Spacing.md,
+    gap: Spacing.md + 2,
     flexGrow: 1,
   },
   center: {

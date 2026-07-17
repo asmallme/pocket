@@ -16,7 +16,7 @@ function ShareIntentHandler() {
     const text = shareIntent.text ?? null;
     if (url || text) {
       router.push({
-        pathname: "/(tabs)/save",
+        pathname: "/save",
         params: {
           ...(url ? { sharedUrl: url } : {}),
           ...(!url && text ? { sharedText: text } : {}),
@@ -42,12 +42,18 @@ export default function RootLayout() {
           headerStyle: { backgroundColor: colors.background },
           headerShadowVisible: false,
           contentStyle: { backgroundColor: colors.background },
+          // 回退按钮只显示箭头，不显示上一级标题（tab 名会造成误导）
+          headerBackButtonDisplayMode: "minimal",
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="login"
           options={{ title: "登录", presentation: "modal" }}
+        />
+        <Stack.Screen
+          name="save"
+          options={{ title: "收藏链接", presentation: "modal" }}
         />
       </Stack>
     </AuthProvider>

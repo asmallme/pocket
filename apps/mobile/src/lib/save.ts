@@ -21,12 +21,23 @@ export type SaveResult =
   | { status: "unauthenticated" }
   | { status: "error"; message: string };
 
+/** web API 需要登录态：带上 Supabase 会话的 Bearer token（与插件一致）。 */
+async function authHeaders(): Promise<Record<string, string>> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  return {
+    "Content-Type": "application/json",
+    ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+  };
+}
+
 /** 调 web 端 unfurl 接口补全链接元数据（含正文节选）。 */
 export async function unfurlViaWeb(url: string): Promise<UnfurlResult | null> {
   try {
     const res = await fetch(`${WEB_URL}/api/unfurl`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: await authHeaders(),
       body: JSON.stringify({ url, content: true }),
     });
     if (!res.ok) return null;
@@ -38,13 +49,14 @@ export async function unfurlViaWeb(url: string): Promise<UnfurlResult | null> {
 
 /** 入库后异步触发 AI 摘要与打标（与插件同一接口），失败静默。 */
 export function enrichBookmark(bookmarkId: string, content?: string | null) {
-  fetch(`${WEB_URL}/api/ai/enrich`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(
-      content ? { bookmarkId, content } : { bookmarkId }
-    ),
-  }).catch(() => {});
+  void (async () => {
+    const res = await fetch(`${WEB_URL}/api/ai/enrich`, {
+      method: "POST",
+      headers: await authHeaders(),
+      body: JSON.stringify(content ? { bookmarkId, content } : { bookmarkId }),
+    });
+    void res;
+  })().catch(() => {});
 }
 
 export async function findExistingBookmark(

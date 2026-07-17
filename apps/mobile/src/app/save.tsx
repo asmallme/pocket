@@ -121,7 +121,8 @@ export default function SaveScreen() {
       setNote("");
       setTagInput("");
       setExistingId(null);
-      router.push(`/b/${result.id}`);
+      // 用 replace 关掉保存弹层并直达详情
+      router.replace(`/b/${result.id}`);
       return;
     }
     if (result.status === "unauthenticated") {

@@ -12,8 +12,6 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
-import * as AppleAuthentication from "expo-apple-authentication";
-import { useColorScheme } from "react-native";
 import { Radius, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/auth-context";
@@ -24,8 +22,7 @@ type Mode = "login" | "signup";
 export default function LoginScreen() {
   const router = useRouter();
   const colors = useTheme();
-  const scheme = useColorScheme();
-  const { signInWithGoogle, signInWithApple } = useAuth();
+  const { signInWithProvider } = useAuth();
 
   const [mode, setMode] = useState<Mode>("login");
   const [username, setUsername] = useState("");
@@ -90,38 +87,26 @@ export default function LoginScreen() {
           收藏你在全网看到的好内容
         </Text>
 
-        {Platform.OS === "ios" && (
-          <AppleAuthentication.AppleAuthenticationButton
-            buttonType={
-              AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN
-            }
-            buttonStyle={
-              scheme === "dark"
-                ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
-                : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
-            }
-            cornerRadius={Radius}
-            style={styles.appleButton}
-            onPress={() => run("apple", signInWithApple)}
-          />
-        )}
-
-        <Pressable
-          style={[
-            styles.button,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-          disabled={pending !== null}
-          onPress={() => run("google", signInWithGoogle)}
-        >
-          {pending === "google" ? (
-            <ActivityIndicator size="small" />
-          ) : (
-            <Text style={[styles.buttonText, { color: colors.foreground }]}>
-              使用 Google 登录
-            </Text>
-          )}
-        </Pressable>
+        {/* 提审前需决策：App Store 指南 4.8 要求有第三方登录就必须提供 Apple 登录 */}
+        {(["google", "github"] as const).map((provider) => (
+          <Pressable
+            key={provider}
+            style={[
+              styles.button,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+            disabled={pending !== null}
+            onPress={() => run(provider, () => signInWithProvider(provider))}
+          >
+            {pending === provider ? (
+              <ActivityIndicator size="small" />
+            ) : (
+              <Text style={[styles.buttonText, { color: colors.foreground }]}>
+                使用 {provider === "google" ? "Google" : "GitHub"} 登录
+              </Text>
+            )}
+          </Pressable>
+        ))}
 
         <View style={styles.divider}>
           <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
@@ -204,10 +189,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     marginBottom: Spacing.lg,
-  },
-  appleButton: {
-    height: 48,
-    width: "100%",
   },
   input: {
     height: 48,

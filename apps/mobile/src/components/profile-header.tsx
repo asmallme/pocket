@@ -3,10 +3,11 @@ import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import type { Profile } from "@pocket/shared";
-import { Radius, Spacing } from "@/constants/theme";
+import { R, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
+import { PressableScale } from "@/components/pressable-scale";
 
 export function ProfileHeader({ profile }: { profile: Profile }) {
   const colors = useTheme();
@@ -126,65 +127,79 @@ export function ProfileHeader({ profile }: { profile: Profile }) {
 
   return (
     <View style={styles.container}>
-      {profile.avatar_url ? (
-        <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
-      ) : (
-        <View style={[styles.avatar, { backgroundColor: colors.muted }]}>
-          <Text style={{ color: colors.mutedForeground, fontSize: 22 }}>
-            {name.slice(0, 1).toUpperCase()}
+      <View style={styles.topRow}>
+        {profile.avatar_url ? (
+          <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
+        ) : (
+          <View style={[styles.avatar, { backgroundColor: colors.muted }]}>
+            <Text style={{ color: colors.mutedForeground, fontSize: 26 }}>
+              {name.slice(0, 1).toUpperCase()}
+            </Text>
+          </View>
+        )}
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={[styles.name, { color: colors.foreground }]}>
+            {name}
+          </Text>
+          <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>
+            @{profile.username}
           </Text>
         </View>
-      )}
-      <View style={{ flex: 1, gap: 2 }}>
-        <Text style={[styles.name, { color: colors.foreground }]}>{name}</Text>
-        <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>
-          @{profile.username}
-        </Text>
-        {profile.bio ? (
-          <Text
-            style={{ color: colors.foreground, fontSize: 13, marginTop: 2 }}
-          >
-            {profile.bio}
-          </Text>
-        ) : null}
-        {!profile.quiet_mode && followerCount !== null ? (
-          <Text
-            style={{ color: colors.mutedForeground, fontSize: 13, marginTop: 2 }}
-          >
-            {followerCount} 粉丝 · {followingCount} 关注
-          </Text>
+        {!isSelf ? (
+          <View style={{ alignItems: "flex-end", gap: Spacing.sm }}>
+            <PressableScale
+              haptic
+              style={[
+                styles.followButton,
+                following
+                  ? {
+                      backgroundColor: colors.card,
+                      borderWidth: StyleSheet.hairlineWidth,
+                      borderColor: colors.border,
+                    }
+                  : { backgroundColor: colors.primary },
+              ]}
+              onPress={toggleFollow}
+            >
+              <Text
+                style={{
+                  color: following
+                    ? colors.mutedForeground
+                    : colors.primaryForeground,
+                  fontSize: 13,
+                  fontWeight: "600",
+                }}
+              >
+                {following ? "已关注" : "关注"}
+              </Text>
+            </PressableScale>
+            <Pressable onPress={toggleBlock} hitSlop={8}>
+              <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>
+                {blocked ? "取消拉黑" : "拉黑"}
+              </Text>
+            </Pressable>
+          </View>
         ) : null}
       </View>
-      {!isSelf ? (
-        <View style={{ alignItems: "flex-end", gap: Spacing.sm }}>
-        <Pressable
-          style={[
-            styles.followButton,
-            following
-              ? {
-                  backgroundColor: colors.card,
-                  borderWidth: StyleSheet.hairlineWidth,
-                  borderColor: colors.border,
-                }
-              : { backgroundColor: colors.primary },
-          ]}
-          onPress={toggleFollow}
-        >
-          <Text
-            style={{
-              color: following ? colors.mutedForeground : colors.primaryForeground,
-              fontSize: 13,
-              fontWeight: "600",
-            }}
-          >
-            {following ? "已关注" : "关注"}
+      {profile.bio ? (
+        <Text style={[styles.bio, { color: colors.foreground }]}>
+          {profile.bio}
+        </Text>
+      ) : null}
+      {!profile.quiet_mode && followerCount !== null ? (
+        <View style={styles.statsRow}>
+          <Text style={[styles.statNum, { color: colors.foreground }]}>
+            {followerCount}
+            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
+              {" "}粉丝
+            </Text>
           </Text>
-        </Pressable>
-        <Pressable onPress={toggleBlock} hitSlop={8}>
-          <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>
-            {blocked ? "取消拉黑" : "拉黑"}
+          <Text style={[styles.statNum, { color: colors.foreground }]}>
+            {followingCount}
+            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
+              {" "}关注
+            </Text>
           </Text>
-        </Pressable>
         </View>
       ) : null}
     </View>
@@ -193,25 +208,49 @@ export function ProfileHeader({ profile }: { profile: Profile }) {
 
 const styles = StyleSheet.create({
   container: {
+    gap: Spacing.sm + 2,
+    paddingHorizontal: Spacing.xs,
+    paddingBottom: Spacing.md,
+  },
+  topRow: {
     flexDirection: "row",
     gap: Spacing.md,
-    padding: Spacing.lg,
-    alignItems: "flex-start",
+    alignItems: "center",
   },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     alignItems: "center",
     justifyContent: "center",
   },
   name: {
-    fontSize: 17,
+    fontSize: 20,
     fontWeight: "700",
+    letterSpacing: -0.3,
+  },
+  bio: {
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  statsRow: {
+    flexDirection: "row",
+    gap: Spacing.lg,
+  },
+  statNum: {
+    fontSize: 14,
+    fontWeight: "700",
+    fontVariant: ["tabular-nums"],
+  },
+  statLabel: {
+    fontSize: 13,
+    fontWeight: "400",
   },
   followButton: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
-    borderRadius: Radius,
+    borderRadius: R.md,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

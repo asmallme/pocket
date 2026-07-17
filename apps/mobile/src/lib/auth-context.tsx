@@ -17,7 +17,7 @@ interface AuthContextValue {
   session: Session | null;
   /** 会话是否已从本地存储恢复完成 */
   ready: boolean;
-  signInWithGoogle: () => Promise<void>;
+  signInWithProvider: (provider: "google" | "github") => Promise<void>;
   signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -39,14 +39,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function signInWithGoogle() {
+  async function signInWithProvider(provider: "google" | "github") {
     // 深链回跳地址：生产为 wangdou://auth-callback，需加入 Supabase Redirect URLs 白名单
     const redirectTo = Linking.createURL("auth-callback");
     const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
+      provider,
       options: { redirectTo, skipBrowserRedirect: true },
     });
-    if (error || !data?.url) throw error ?? new Error("无法发起 Google 登录");
+    if (error || !data?.url) throw error ?? new Error("无法发起第三方登录");
 
     const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
     if (result.type !== "success") return; // 用户取消
@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ session, ready, signInWithGoogle, signInWithApple, signOut }}
+      value={{ session, ready, signInWithProvider, signInWithApple, signOut }}
     >
       {children}
     </AuthContext.Provider>

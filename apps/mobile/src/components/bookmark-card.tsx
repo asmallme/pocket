@@ -1,21 +1,24 @@
-import { useState } from "react";
-import {
-  Alert,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { memo, useState } from "react";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
+import * as Haptics from "expo-haptics";
 import { SymbolView } from "expo-symbols";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+} from "react-native-reanimated";
 import type { BookmarkWithAuthor } from "@pocket/shared";
-import { Radius, Spacing } from "@/constants/theme";
+import { CardShadow, R, SerifFont, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/auth-context";
-import { supabase, WEB_URL } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
+import { enrichBookmark } from "@/lib/save";
 import { hostOf, timeAgo } from "@/lib/format";
+import { PressableScale } from "@/components/pressable-scale";
 
 interface Props {
   bookmark: BookmarkWithAuthor;
@@ -24,7 +27,7 @@ interface Props {
   repostedByViewerId: string | null;
 }
 
-export function BookmarkCard({
+function BookmarkCardInner({
   bookmark,
   likedByViewer,
   repostedByViewerId,
@@ -41,8 +44,14 @@ export function BookmarkCard({
   const [repostCount, setRepostCount] = useState(bookmark.repost_count ?? 0);
   const [repostPending, setRepostPending] = useState(false);
 
+  const heartScale = useSharedValue(1);
+  const heartStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: heartScale.value }],
+  }));
+
   const author = bookmark.author;
   const name = author?.display_name ?? author?.username ?? "匿名";
+  const isAiSummary = !!bookmark.ai_summary;
   const summary = bookmark.ai_summary ?? bookmark.description;
   const domain = hostOf(bookmark.url);
   const showRepost =
@@ -61,6 +70,13 @@ export function BookmarkCard({
     if (requireLogin() || likePending) return;
     setLikePending(true);
     const next = !liked;
+    if (next) {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      heartScale.value = withSequence(
+        withSpring(1.45, { damping: 9, stiffness: 420 }),
+        withSpring(1, { damping: 12, stiffness: 300 })
+      );
+    }
     setLiked(next);
     setLikeCount((c) => c + (next ? 1 : -1));
     const { error } = next
@@ -94,17 +110,13 @@ export function BookmarkCard({
       Alert.alert("转存失败", error.message);
       return;
     }
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const result = data as { id: string; duplicate: boolean };
     setOwnCopyId(result.id);
     if (!result.duplicate) {
       setRepostCount((c) => c + 1);
       if (!bookmark.ai_summary) {
-        // 后台补 AI 摘要，失败静默
-        fetch(`${WEB_URL}/api/ai/enrich`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ bookmarkId: result.id }),
-        }).catch(() => {});
+        enrichBookmark(result.id);
       }
     }
   }
@@ -114,10 +126,12 @@ export function BookmarkCard({
   }
 
   return (
-    <Pressable
+    <PressableScale
+      scaleTo={0.98}
       style={[
         styles.card,
-        { backgroundColor: colors.card, borderColor: colors.border },
+        CardShadow,
+        { backgroundColor: colors.card, borderColor: colors.cardBorder },
       ]}
       onPress={() => router.push(`/b/${bookmark.id}`)}
     >
@@ -130,25 +144,31 @@ export function BookmarkCard({
           <Image source={{ uri: author.avatar_url }} style={styles.avatar} />
         ) : (
           <View style={[styles.avatar, { backgroundColor: colors.muted }]}>
-            <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>
+            <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>
               {name.slice(0, 1).toUpperCase()}
             </Text>
           </View>
         )}
-        <Text style={[styles.author, { color: colors.foreground }]}>
-          {name}
-        </Text>
+        <View style={{ flex: 1 }}>
+          <Text
+            style={[styles.author, { color: colors.foreground }]}
+            numberOfLines={1}
+          >
+            {name}
+          </Text>
+          {bookmark.reposted_from !== null || bookmark.source === "repost" ? (
+            <Text
+              style={[styles.origin, { color: colors.mutedForeground }]}
+              numberOfLines={1}
+            >
+              转存自 @{bookmark.origin_author?.username ?? "（原收藏已删除）"}
+            </Text>
+          ) : null}
+        </View>
         <Text style={[styles.time, { color: colors.mutedForeground }]}>
           {timeAgo(bookmark.created_at)}
         </Text>
       </Pressable>
-
-      {bookmark.reposted_from !== null || bookmark.source === "repost" ? (
-        <Text style={[styles.origin, { color: colors.mutedForeground }]}>
-          转存自 @
-          {bookmark.origin_author?.username ?? "（原收藏已删除）"}
-        </Text>
-      ) : null}
 
       {bookmark.title ? (
         <Pressable onPress={openUrl} disabled={!bookmark.url}>
@@ -159,12 +179,10 @@ export function BookmarkCard({
       ) : null}
 
       {bookmark.note ? (
-        <View
-          style={[
-            styles.quote,
-            { backgroundColor: colors.accent, borderRadius: Radius },
-          ]}
-        >
+        <View style={[styles.quote, { backgroundColor: colors.accent }]}>
+          <View
+            style={[styles.quoteBar, { backgroundColor: colors.accentStrong }]}
+          />
           <Text style={[styles.quoteText, { color: colors.foreground }]}>
             {bookmark.note}
           </Text>
@@ -172,12 +190,25 @@ export function BookmarkCard({
       ) : null}
 
       {summary ? (
-        <Text
-          style={[styles.summary, { color: colors.mutedForeground }]}
-          numberOfLines={3}
-        >
-          {summary}
-        </Text>
+        <View style={styles.summaryRow}>
+          {isAiSummary ? (
+            <SymbolView
+              name="sparkles"
+              tintColor={colors.accentStrong}
+              size={13}
+              style={styles.sparkle}
+            />
+          ) : null}
+          <Text
+            style={[
+              styles.summary,
+              { color: colors.mutedForeground, flex: 1 },
+            ]}
+            numberOfLines={3}
+          >
+            {summary}
+          </Text>
+        </View>
       ) : null}
 
       {bookmark.cover_image ? (
@@ -185,7 +216,7 @@ export function BookmarkCard({
           source={{ uri: bookmark.cover_image }}
           style={[styles.cover, { backgroundColor: colors.muted }]}
           contentFit="cover"
-          transition={150}
+          transition={220}
         />
       ) : null}
 
@@ -207,16 +238,23 @@ export function BookmarkCard({
 
       <View style={styles.footer}>
         <Pressable style={styles.action} onPress={toggleLike} hitSlop={8}>
-          <SymbolView
-            name={liked ? "heart.fill" : "heart"}
-            tintColor={liked ? "#E0245E" : colors.mutedForeground}
-            size={18}
-          />
-          {likeCount > 0 && (
-            <Text style={[styles.actionText, { color: colors.mutedForeground }]}>
+          <Animated.View style={heartStyle}>
+            <SymbolView
+              name={liked ? "heart.fill" : "heart"}
+              tintColor={liked ? colors.like : colors.mutedForeground}
+              size={19}
+            />
+          </Animated.View>
+          {likeCount > 0 ? (
+            <Text
+              style={[
+                styles.actionText,
+                { color: liked ? colors.like : colors.mutedForeground },
+              ]}
+            >
               {likeCount}
             </Text>
-          )}
+          ) : null}
         </Pressable>
 
         <View style={styles.action}>
@@ -225,27 +263,27 @@ export function BookmarkCard({
             tintColor={colors.mutedForeground}
             size={17}
           />
-          {(bookmark.comment_count ?? 0) > 0 && (
+          {(bookmark.comment_count ?? 0) > 0 ? (
             <Text style={[styles.actionText, { color: colors.mutedForeground }]}>
               {bookmark.comment_count}
             </Text>
-          )}
+          ) : null}
         </View>
 
         {showRepost ? (
           <Pressable style={styles.action} onPress={repost} hitSlop={8}>
             <SymbolView
               name={ownCopyId ? "bookmark.fill" : "bookmark"}
-              tintColor={ownCopyId ? colors.foreground : colors.mutedForeground}
+              tintColor={ownCopyId ? colors.accentStrong : colors.mutedForeground}
               size={17}
             />
-            {repostCount > 0 && (
+            {repostCount > 0 ? (
               <Text
                 style={[styles.actionText, { color: colors.mutedForeground }]}
               >
                 {repostCount}
               </Text>
-            )}
+            ) : null}
           </Pressable>
         ) : null}
 
@@ -256,53 +294,70 @@ export function BookmarkCard({
           </Text>
         ) : null}
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 
+/** feed 长列表性能：仅在数据变化时重渲染 */
+export const BookmarkCard = memo(BookmarkCardInner);
+
 const styles = StyleSheet.create({
   card: {
+    borderRadius: R.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: Radius,
     padding: Spacing.lg,
-    gap: Spacing.sm,
+    gap: Spacing.sm + 2,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.sm,
+    gap: Spacing.sm + 2,
   },
   avatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
   },
   author: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "600",
-    flexShrink: 1,
-  },
-  time: {
-    fontSize: 12,
-    marginLeft: "auto",
   },
   origin: {
     fontSize: 12,
+    marginTop: 1,
+  },
+  time: {
+    fontSize: 12,
   },
   title: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "600",
-    lineHeight: 22,
+    lineHeight: 23,
+    letterSpacing: -0.2,
   },
   quote: {
-    padding: Spacing.md,
+    flexDirection: "row",
+    borderRadius: R.sm,
+    overflow: "hidden",
+  },
+  quoteBar: {
+    width: 3,
   },
   quoteText: {
-    fontSize: 14,
-    lineHeight: 21,
-    fontStyle: "italic",
+    flex: 1,
+    fontFamily: SerifFont,
+    fontSize: 15,
+    lineHeight: 23,
+    padding: Spacing.md,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  sparkle: {
+    marginTop: 3,
   },
   summary: {
     fontSize: 14,
@@ -311,15 +366,15 @@ const styles = StyleSheet.create({
   cover: {
     width: "100%",
     aspectRatio: 16 / 9,
-    borderRadius: Radius,
+    borderRadius: R.md,
   },
   tags: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: Spacing.xs + 2,
+    gap: 6,
   },
   tagChip: {
-    paddingHorizontal: Spacing.sm,
+    paddingHorizontal: Spacing.sm + 2,
     paddingVertical: 3,
     borderRadius: 999,
   },
@@ -335,10 +390,11 @@ const styles = StyleSheet.create({
   action: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.xs,
+    gap: 5,
   },
   actionText: {
     fontSize: 13,
+    fontVariant: ["tabular-nums"],
   },
   domain: {
     fontSize: 12,

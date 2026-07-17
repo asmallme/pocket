@@ -1,9 +1,12 @@
-import { Tabs } from "expo-router";
+import { Pressable } from "react-native";
+import { Tabs, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
+import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
 export default function TabLayout() {
   const colors = useTheme();
+  const router = useRouter();
 
   return (
     <Tabs
@@ -18,6 +21,20 @@ export default function TabLayout() {
         headerStyle: { backgroundColor: colors.background },
         headerShadowVisible: false,
         sceneStyle: { backgroundColor: colors.background },
+        // 顶部右侧「+」：应用内收藏入口（系统分享面板之外的补充路径）
+        headerRight: () => (
+          <Pressable
+            onPress={() => router.push("/save")}
+            hitSlop={8}
+            style={{ paddingHorizontal: Spacing.lg }}
+          >
+            <SymbolView
+              name="plus.circle.fill"
+              tintColor={colors.foreground}
+              size={24}
+            />
+          </Pressable>
+        ),
       }}
     >
       <Tabs.Screen
@@ -26,15 +43,6 @@ export default function TabLayout() {
           title: "首页",
           tabBarIcon: ({ color }) => (
             <SymbolView name="house.fill" tintColor={color} size={24} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="save"
-        options={{
-          title: "收藏",
-          tabBarIcon: ({ color }) => (
-            <SymbolView name="plus.circle.fill" tintColor={color} size={24} />
           ),
         }}
       />

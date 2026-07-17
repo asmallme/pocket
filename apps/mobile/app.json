@@ -10,6 +10,7 @@
     "ios": {
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "app.wangdou.ios",
+      "appleTeamId": "8396W8WXG4",
       "supportsTablet": false,
       "usesAppleSignIn": true,
       "infoPlist": {

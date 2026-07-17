@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Pressable,
   ScrollView,
   StyleSheet,
   Switch,
@@ -11,10 +10,87 @@ import {
   View,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
-import { Radius, Spacing } from "@/constants/theme";
+import * as WebBrowser from "expo-web-browser";
+import Constants from "expo-constants";
+import { SymbolView, type SymbolViewProps } from "expo-symbols";
+import { CardShadow, R, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/auth-context";
-import { supabase } from "@/lib/supabase";
+import { supabase, WEB_URL } from "@/lib/supabase";
+import { PressableScale } from "@/components/pressable-scale";
+
+function Section({ title, children }: { title?: string; children: ReactNode }) {
+  const colors = useTheme();
+  return (
+    <View style={styles.section}>
+      {title ? (
+        <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
+          {title}
+        </Text>
+      ) : null}
+      <View
+        style={[
+          styles.sectionCard,
+          CardShadow,
+          { backgroundColor: colors.card, borderColor: colors.cardBorder },
+        ]}
+      >
+        {children}
+      </View>
+    </View>
+  );
+}
+
+function Row({
+  icon,
+  label,
+  onPress,
+  right,
+  destructive = false,
+  last = false,
+}: {
+  icon: SymbolViewProps["name"];
+  label: string;
+  onPress?: () => void;
+  right?: ReactNode;
+  destructive?: boolean;
+  last?: boolean;
+}) {
+  const colors = useTheme();
+  const tint = destructive ? colors.destructive : colors.foreground;
+  return (
+    <PressableScale
+      scaleTo={0.99}
+      disabled={!onPress}
+      onPress={onPress}
+      style={[
+        styles.row,
+        !last && {
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: colors.border,
+        },
+      ]}
+    >
+      <View style={[styles.rowIcon, { backgroundColor: colors.muted }]}>
+        <SymbolView
+          name={icon}
+          tintColor={destructive ? colors.destructive : colors.mutedForeground}
+          size={16}
+        />
+      </View>
+      <Text style={[styles.rowLabel, { color: tint }]}>{label}</Text>
+      {right ??
+        (onPress ? (
+          <SymbolView
+            name="chevron.right"
+            tintColor={colors.mutedForeground}
+            size={13}
+            weight="semibold"
+          />
+        ) : null)}
+    </PressableScale>
+  );
+}
 
 export default function SettingsScreen() {
   const colors = useTheme();
@@ -27,6 +103,7 @@ export default function SettingsScreen() {
   const [quietMode, setQuietMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
     if (!userId) {
@@ -48,23 +125,27 @@ export default function SettingsScreen() {
       });
   }, [userId, router]);
 
-  async function save() {
-    if (!userId || saving) return;
+  async function saveProfile(next?: { quiet_mode?: boolean }) {
+    if (!userId) return;
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
       .update({
         display_name: displayName.trim() || null,
         bio: bio.trim() || null,
-        quiet_mode: quietMode,
+        quiet_mode: next?.quiet_mode ?? quietMode,
       })
       .eq("id", userId);
     setSaving(false);
     if (error) {
       Alert.alert("保存失败", error.message);
     } else {
-      router.back();
+      setDirty(false);
     }
+  }
+
+  function openWebPage(path: string) {
+    void WebBrowser.openBrowserAsync(`${WEB_URL}${path}`);
   }
 
   async function handleSignOut() {
@@ -115,98 +196,131 @@ export default function SettingsScreen() {
 
   const inputStyle = [
     styles.input,
-    {
-      backgroundColor: colors.card,
-      borderColor: colors.border,
-      color: colors.foreground,
-    },
+    { backgroundColor: colors.muted, color: colors.foreground },
   ];
+  const version = Constants.expoConfig?.version ?? "1.0.0";
 
   return (
     <ScrollView
+      style={{ backgroundColor: colors.background }}
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
       <Stack.Screen options={{ title: "设置" }} />
 
-      <Text style={[styles.label, { color: colors.mutedForeground }]}>
-        昵称
-      </Text>
-      <TextInput
-        style={inputStyle}
-        placeholder="展示名称"
-        placeholderTextColor={colors.mutedForeground}
-        value={displayName}
-        onChangeText={setDisplayName}
-        maxLength={30}
-      />
-
-      <Text style={[styles.label, { color: colors.mutedForeground }]}>
-        简介
-      </Text>
-      <TextInput
-        style={[...inputStyle, styles.bioInput]}
-        placeholder="一句话介绍自己"
-        placeholderTextColor={colors.mutedForeground}
-        value={bio}
-        onChangeText={setBio}
-        maxLength={200}
-        multiline
-      />
-
-      <View style={styles.switchRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: colors.foreground, fontSize: 15 }}>
-            安静模式
-          </Text>
-          <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>
-            隐藏关注/粉丝等社交数字
-          </Text>
-        </View>
-        <Switch value={quietMode} onValueChange={setQuietMode} />
-      </View>
-
-      <Pressable
-        style={[styles.button, { backgroundColor: colors.primary }]}
-        disabled={saving}
-        onPress={save}
-      >
-        {saving ? (
-          <ActivityIndicator color={colors.primaryForeground} />
-        ) : (
-          <Text
-            style={{
-              color: colors.primaryForeground,
-              fontSize: 16,
-              fontWeight: "600",
+      <Section title="个人资料">
+        <View style={styles.formArea}>
+          <TextInput
+            style={inputStyle}
+            placeholder="昵称"
+            placeholderTextColor={colors.mutedForeground}
+            value={displayName}
+            onChangeText={(v) => {
+              setDisplayName(v);
+              setDirty(true);
             }}
-          >
-            保存
-          </Text>
-        )}
-      </Pressable>
+            maxLength={30}
+          />
+          <TextInput
+            style={[...inputStyle, styles.bioInput]}
+            placeholder="一句话介绍自己"
+            placeholderTextColor={colors.mutedForeground}
+            value={bio}
+            onChangeText={(v) => {
+              setBio(v);
+              setDirty(true);
+            }}
+            maxLength={200}
+            multiline
+          />
+          {dirty ? (
+            <PressableScale
+              haptic
+              style={[styles.saveButton, { backgroundColor: colors.primary }]}
+              disabled={saving}
+              onPress={() => void saveProfile()}
+            >
+              {saving ? (
+                <ActivityIndicator color={colors.primaryForeground} />
+              ) : (
+                <Text
+                  style={{
+                    color: colors.primaryForeground,
+                    fontSize: 15,
+                    fontWeight: "600",
+                  }}
+                >
+                  保存资料
+                </Text>
+              )}
+            </PressableScale>
+          ) : null}
+        </View>
+      </Section>
 
-      <Pressable
-        style={[
-          styles.button,
-          {
-            backgroundColor: colors.card,
-            borderWidth: StyleSheet.hairlineWidth,
-            borderColor: colors.border,
-          },
-        ]}
-        onPress={handleSignOut}
-      >
-        <Text style={{ color: colors.foreground, fontSize: 16 }}>
-          退出登录
-        </Text>
-      </Pressable>
+      <Section title="偏好">
+        <Row
+          icon="moon"
+          label="安静模式"
+          last
+          right={
+            <Switch
+              value={quietMode}
+              onValueChange={(v) => {
+                setQuietMode(v);
+                void saveProfile({ quiet_mode: v });
+              }}
+            />
+          }
+        />
+      </Section>
 
-      <Pressable style={styles.dangerLink} onPress={deleteAccount}>
-        <Text style={{ color: colors.destructive, fontSize: 14 }}>
-          注销账号（永久删除所有数据）
-        </Text>
-      </Pressable>
+      <Section title="关于">
+        <Row
+          icon="doc.text"
+          label="用户协议"
+          onPress={() => openWebPage("/terms")}
+        />
+        <Row
+          icon="hand.raised"
+          label="隐私政策"
+          onPress={() => openWebPage("/privacy")}
+        />
+        <Row
+          icon="info.circle"
+          label="关于网兜"
+          onPress={() => openWebPage("/about")}
+        />
+        <Row
+          icon="number"
+          label="版本"
+          last
+          right={
+            <Text style={{ color: colors.mutedForeground, fontSize: 14 }}>
+              {version}
+            </Text>
+          }
+        />
+      </Section>
+
+      <Section title="账号">
+        <Row
+          icon="rectangle.portrait.and.arrow.right"
+          label="退出登录"
+          onPress={() => void handleSignOut()}
+        />
+        <Row
+          icon="trash"
+          label="注销账号"
+          destructive
+          last
+          onPress={deleteAccount}
+        />
+      </Section>
+
+      <Text style={[styles.footer, { color: colors.mutedForeground }]}>
+        网兜 · 兜住全网的好内容
+      </Text>
     </ScrollView>
   );
 }
@@ -219,40 +333,64 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: Spacing.lg,
+    gap: Spacing.lg,
+    paddingBottom: Spacing.xl * 2,
+  },
+  section: {
+    gap: Spacing.sm,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginLeft: Spacing.xs,
+  },
+  sectionCard: {
+    borderRadius: R.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: "hidden",
+  },
+  formArea: {
+    padding: Spacing.md,
     gap: Spacing.md,
   },
-  label: {
-    fontSize: 13,
-    marginTop: Spacing.sm,
-  },
   input: {
-    height: 48,
-    borderRadius: Radius,
-    borderWidth: StyleSheet.hairlineWidth,
+    height: 46,
+    borderRadius: R.sm,
     paddingHorizontal: Spacing.lg,
     fontSize: 15,
   },
   bioInput: {
-    height: 80,
+    height: 76,
     paddingTop: Spacing.md,
     textAlignVertical: "top",
   },
-  switchRow: {
+  saveButton: {
+    height: 44,
+    borderRadius: R.sm,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  row: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.md,
+    paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
   },
-  button: {
-    height: 50,
-    borderRadius: Radius,
+  rowIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: Spacing.sm,
   },
-  dangerLink: {
-    alignItems: "center",
-    paddingVertical: Spacing.lg,
-    marginTop: Spacing.xl,
+  rowLabel: {
+    flex: 1,
+    fontSize: 15,
+  },
+  footer: {
+    textAlign: "center",
+    fontSize: 12,
+    marginTop: Spacing.sm,
   },
 });
