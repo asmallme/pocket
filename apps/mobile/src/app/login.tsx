@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -10,8 +10,10 @@ import {
   Text,
   TextInput,
   View,
+  useColorScheme,
 } from "react-native";
 import { useRouter } from "expo-router";
+import * as AppleAuthentication from "expo-apple-authentication";
 import { Radius, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/auth-context";
@@ -22,13 +24,23 @@ type Mode = "login" | "signup";
 export default function LoginScreen() {
   const router = useRouter();
   const colors = useTheme();
-  const { signInWithProvider } = useAuth();
+  const scheme = useColorScheme();
+  const { signInWithProvider, signInWithApple } = useAuth();
 
   const [mode, setMode] = useState<Mode>("login");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState<string | null>(null);
+  // Apple 登录不可用时渲染官方按钮会抛错（如未登录 Apple ID 的模拟器）
+  const [appleAvailable, setAppleAvailable] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS !== "ios") return;
+    AppleAuthentication.isAvailableAsync()
+      .then(setAppleAvailable)
+      .catch(() => setAppleAvailable(false));
+  }, []);
 
   function done() {
     router.dismissTo("/");
@@ -87,7 +99,23 @@ export default function LoginScreen() {
           收藏你在全网看到的好内容
         </Text>
 
-        {/* 提审前需决策：App Store 指南 4.8 要求有第三方登录就必须提供 Apple 登录 */}
+        {/* 指南 4.8：有第三方登录必须同时提供 Apple 登录 */}
+        {appleAvailable && (
+          <AppleAuthentication.AppleAuthenticationButton
+            buttonType={
+              AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN
+            }
+            buttonStyle={
+              scheme === "dark"
+                ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+            }
+            cornerRadius={Radius}
+            style={styles.appleButton}
+            onPress={() => run("apple", signInWithApple)}
+          />
+        )}
+
         {(["google", "github"] as const).map((provider) => (
           <Pressable
             key={provider}
@@ -189,6 +217,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     marginBottom: Spacing.lg,
+  },
+  appleButton: {
+    height: 48,
+    width: "100%",
   },
   input: {
     height: 48,
