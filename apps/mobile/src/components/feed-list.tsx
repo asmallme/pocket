@@ -20,6 +20,7 @@ import { DOCK_SPACE, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
+import { useTabRepress } from "@/lib/tab-repress";
 import { BookmarkCard } from "@/components/bookmark-card";
 
 interface Props {
@@ -32,6 +33,8 @@ interface Props {
   header?: ReactElement;
   /** 底部是否为悬浮 Dock 预留空间（tab 页为 true） */
   dockSpace?: boolean;
+  /** 所属 tab 的路由名：重复点按该 tab 时列表滚回顶部 */
+  tabName?: string;
 }
 
 export function FeedList({
@@ -42,6 +45,7 @@ export function FeedList({
   emptyText = "还没有内容",
   header,
   dockSpace = false,
+  tabName,
 }: Props) {
   const colors = useTheme();
   const { session, ready } = useAuth();
@@ -57,6 +61,14 @@ export function FeedList({
   const [error, setError] = useState(false);
   // 防止翻页请求乱序覆盖：每次全量刷新递增
   const generation = useRef(0);
+  const listRef = useRef<FlatList<BookmarkWithAuthor>>(null);
+
+  useTabRepress(
+    tabName,
+    useCallback(() => {
+      listRef.current?.scrollToOffset({ offset: 0, animated: true });
+    }, [])
+  );
 
   const load = useCallback(
     async (mode: "initial" | "refresh" | "more", afterCursor?: string | null) => {
@@ -132,6 +144,7 @@ export function FeedList({
 
   return (
     <FlatList
+      ref={listRef}
       data={items}
       keyExtractor={(b) => b.id}
       renderItem={renderItem}

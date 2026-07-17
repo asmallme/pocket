@@ -106,6 +106,7 @@ export default function HomeScreen() {
         key={session ? tab : "global"}
         scope={session ? tab : "global"}
         dockSpace
+        tabName="index"
         emptyText={
           tab === "following"
             ? "关注一些人，这里会出现他们的收藏"

@@ -104,6 +104,7 @@ export default function MeScreen() {
         userId={session.user.id}
         includePrivate
         dockSpace
+        tabName="me"
         header={profile ? <ProfileHeader profile={profile} /> : undefined}
         emptyText="你还没有收藏，去收藏第一条内容吧"
       />
