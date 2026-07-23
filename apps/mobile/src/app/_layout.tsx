@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { useEffect } from "react";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -40,7 +41,7 @@ function ModalClose() {
       scaleTo={0.88}
       hitSlop={8}
       onPress={() => router.back()}
-      accessibilityLabel="关闭"
+      accessibilityLabel={t.common.close}
       style={{
         width: 30,
         height: 30,
@@ -83,7 +84,7 @@ export default function RootLayout() {
         <Stack.Screen
           name="login"
           options={{
-            title: "登录",
+            title: t.common.loginTitle,
             presentation: "modal",
             headerLeft: () => <ModalClose />,
           }}
@@ -91,7 +92,7 @@ export default function RootLayout() {
         <Stack.Screen
           name="save"
           options={{
-            title: "收藏链接",
+            title: t.save.title,
             presentation: "modal",
             headerLeft: () => <ModalClose />,
           }}
@@ -99,7 +100,7 @@ export default function RootLayout() {
         <Stack.Screen
           name="edit/[id]"
           options={{
-            title: "编辑收藏",
+            title: t.edit.title,
             presentation: "modal",
             headerLeft: () => <ModalClose />,
           }}

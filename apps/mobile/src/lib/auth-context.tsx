@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import {
   createContext,
   useContext,
@@ -46,12 +47,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       provider,
       options: { redirectTo, skipBrowserRedirect: true },
     });
-    if (error || !data?.url) throw error ?? new Error("无法发起第三方登录");
+    if (error || !data?.url) throw error ?? new Error(t.login.oauthFailed);
 
     const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
     if (result.type !== "success") return; // 用户取消
     const code = new URL(result.url).searchParams.get("code");
-    if (!code) throw new Error("授权回调缺少 code");
+    if (!code) throw new Error(t.login.callbackMissingCode);
     const { error: exchangeError } =
       await supabase.auth.exchangeCodeForSession(code);
     if (exchangeError) throw exchangeError;
@@ -70,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if ((e as { code?: string }).code === "ERR_REQUEST_CANCELED") return;
       throw e;
     }
-    if (!credential.identityToken) throw new Error("Apple 未返回身份令牌");
+    if (!credential.identityToken) throw new Error(t.login.appleNoToken);
     const { error } = await supabase.auth.signInWithIdToken({
       provider: "apple",
       token: credential.identityToken,

@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { useState } from "react";
 import { StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import * as Haptics from "expo-haptics";
@@ -14,9 +15,9 @@ import { ScreenHeader } from "@/components/screen-header";
 import { PressableScale } from "@/components/pressable-scale";
 
 const TABS = [
-  { key: "global", label: "全站" },
-  { key: "following", label: "关注" },
-  { key: "subscribed_tags", label: "订阅标签" },
+  { key: "global", label: t.home.global },
+  { key: "following", label: t.home.following },
+  { key: "subscribed_tags", label: t.home.subscribedTags },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -100,7 +101,7 @@ export default function HomeScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <ScreenHeader title="网兜" caption="兜住全网的好内容" />
+      <ScreenHeader title={t.home.brand} caption={t.home.slogan} />
       {session ? <SegmentedTabs value={tab} onChange={setTab} /> : null}
       <FeedList
         key={session ? tab : "global"}
@@ -109,10 +110,10 @@ export default function HomeScreen() {
         tabName="index"
         emptyText={
           tab === "following"
-            ? "关注一些人，这里会出现他们的收藏"
+            ? t.home.emptyFollowing
             : tab === "subscribed_tags"
-              ? "订阅一些标签，这里会出现相关收藏"
-              : "还没有内容"
+              ? t.home.emptyTags
+              : t.common.empty
         }
       />
     </View>

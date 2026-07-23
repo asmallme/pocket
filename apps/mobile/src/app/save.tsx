@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -92,7 +93,7 @@ export default function SaveScreen() {
   async function pasteFromClipboard() {
     const text = await Clipboard.getStringAsync();
     if (!text || !(await applyUrl(text))) {
-      Alert.alert("剪贴板里没有链接");
+      Alert.alert(t.save.clipboardEmpty);
     }
   }
 
@@ -141,7 +142,7 @@ export default function SaveScreen() {
       router.push("/login");
       return;
     }
-    Alert.alert("保存失败", result.message);
+    Alert.alert(t.save.failed, result.message);
   }
 
   const inputStyle = [
@@ -166,7 +167,7 @@ export default function SaveScreen() {
         <View style={styles.urlRow}>
           <TextInput
             style={[...inputStyle, { flex: 1 }]}
-            placeholder="粘贴或输入链接"
+            placeholder={t.save.inputPlaceholder}
             placeholderTextColor={colors.mutedForeground}
             autoCapitalize="none"
             autoCorrect={false}
@@ -180,7 +181,7 @@ export default function SaveScreen() {
             onPress={pasteFromClipboard}
           >
             <Text style={{ color: colors.foreground, fontSize: 14 }}>
-              粘贴
+              {t.save.paste}
             </Text>
           </Pressable>
         </View>
@@ -194,7 +195,7 @@ export default function SaveScreen() {
             style={[styles.clipboardHint, { backgroundColor: colors.accent }]}
           >
             <Text style={{ color: colors.foreground, fontSize: 13 }}>
-              📎 检测到剪贴板里有链接，点击一键填入
+              {t.save.clipboardHint}
             </Text>
           </Pressable>
         ) : null}
@@ -242,14 +243,14 @@ export default function SaveScreen() {
         {existingId ? (
           <Pressable onPress={() => router.push(`/b/${existingId}`)}>
             <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>
-              已收藏过这个链接，点击查看 →
+              {t.save.existing}
             </Text>
           </Pressable>
         ) : null}
 
         <TextInput
           style={[...inputStyle, styles.noteInput]}
-          placeholder="写一句推荐语或金句（可选）"
+          placeholder={t.save.notePlaceholder}
           placeholderTextColor={colors.mutedForeground}
           value={note}
           onChangeText={setNote}
@@ -258,7 +259,7 @@ export default function SaveScreen() {
 
         <TextInput
           style={inputStyle}
-          placeholder="标签，逗号分隔（可选）"
+          placeholder={t.save.tagsPlaceholder}
           placeholderTextColor={colors.mutedForeground}
           autoCapitalize="none"
           value={tagInput}
@@ -267,7 +268,7 @@ export default function SaveScreen() {
 
         <View style={styles.switchRow}>
           <Text style={{ color: colors.foreground, fontSize: 15 }}>
-            公开这条收藏
+            {t.save.isPublic}
           </Text>
           <Switch value={isPublic} onValueChange={setIsPublic} />
         </View>
@@ -296,7 +297,7 @@ export default function SaveScreen() {
                 fontWeight: "600",
               }}
             >
-              {existingId ? "再收藏一次" : "收藏"}
+              {existingId ? t.save.submitAgain : t.save.submit}
             </Text>
           )}
         </Pressable>

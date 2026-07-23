@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
@@ -106,12 +107,11 @@ export function ProfileHeader({ profile }: { profile: Profile }) {
       return;
     }
     Alert.alert(
-      "拉黑该用户",
-      "拉黑后，TA 的收藏将不再出现在你的信息流中。",
+      t.profile.blockConfirmTitle,      t.profile.blockConfirmBody,
       [
-        { text: "取消", style: "cancel" },
+        { text: t.common.cancel, style: "cancel" },
         {
-          text: "拉黑",
+          text: t.profile.blockAction,
           style: "destructive",
           onPress: async () => {
             const { error } = await supabase
@@ -129,11 +129,11 @@ export function ProfileHeader({ profile }: { profile: Profile }) {
   function showMoreActions() {
     Alert.alert(name, undefined, [
       {
-        text: blocked ? "取消拉黑" : "拉黑该用户",
+        text: blocked ? t.profile.unblock : t.profile.block,
         style: blocked ? "default" : "destructive",
         onPress: toggleBlock,
       },
-      { text: "取消", style: "cancel" },
+      { text: t.common.cancel, style: "cancel" },
     ]);
   }
 
@@ -182,7 +182,7 @@ export function ProfileHeader({ profile }: { profile: Profile }) {
                   fontWeight: "600",
                 }}
               >
-                {following ? "已关注" : "关注"}
+                {following ? t.profile.following : t.profile.follow}
               </Text>
             </PressableScale>
             {/* 低频操作收进「···」菜单，不裸露在页面上 */}
@@ -190,7 +190,7 @@ export function ProfileHeader({ profile }: { profile: Profile }) {
               scaleTo={0.88}
               hitSlop={8}
               onPress={showMoreActions}
-              accessibilityLabel="更多操作"
+              accessibilityLabel={t.profile.more}
               style={[styles.moreButton, { backgroundColor: colors.muted }]}
             >
               <SymbolView
@@ -212,13 +212,13 @@ export function ProfileHeader({ profile }: { profile: Profile }) {
           <Text style={[styles.statNum, { color: colors.foreground }]}>
             {followerCount}
             <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
-              {" "}粉丝
+              {" "}{t.profile.followers}
             </Text>
           </Text>
           <Text style={[styles.statNum, { color: colors.foreground }]}>
             {followingCount}
             <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
-              {" "}关注
+              {" "}{t.profile.followingCount}
             </Text>
           </Text>
         </View>

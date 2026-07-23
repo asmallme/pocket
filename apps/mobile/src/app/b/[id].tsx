@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -32,7 +33,7 @@ import { BookmarkCard } from "@/components/bookmark-card";
 const COMMENT_SELECT =
   "*, author:profiles!comments_user_id_fkey(id, username, display_name, avatar_url)";
 
-const REPORT_REASONS = ["垃圾广告", "违法违规", "色情低俗", "侵权", "其他"];
+const REPORT_REASONS = t.detail.reportReasons;
 
 export default function BookmarkDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -151,7 +152,7 @@ export default function BookmarkDetailScreen() {
       .single();
     setPosting(false);
     if (error) {
-      Alert.alert("评论失败", error.message);
+      Alert.alert(t.detail.commentFailed, error.message);
       return;
     }
     setComments((prev) => [...prev, data as unknown as Comment]);
@@ -159,10 +160,10 @@ export default function BookmarkDetailScreen() {
   }
 
   function deleteComment(commentId: string) {
-    Alert.alert("删除评论", "确定删除这条评论吗？", [
-      { text: "取消", style: "cancel" },
+    Alert.alert(t.detail.deleteCommentTitle, t.detail.deleteCommentConfirm, [
+      { text: t.common.cancel, style: "cancel" },
       {
-        text: "删除",
+        text: t.common.delete,
         style: "destructive",
         onPress: async () => {
           const { error } = await supabase
@@ -182,7 +183,7 @@ export default function BookmarkDetailScreen() {
       router.push("/login");
       return;
     }
-    Alert.alert("举报这条收藏", "选择举报原因", [
+    Alert.alert(t.detail.reportTitle, t.detail.reportPrompt, [
       ...REPORT_REASONS.map((reason) => ({
         text: reason,
         onPress: async () => {
@@ -192,20 +193,20 @@ export default function BookmarkDetailScreen() {
             reason,
           });
           Alert.alert(
-            error ? "举报失败" : "已收到举报",
-            error ? "请稍后重试" : "我们会尽快处理，感谢反馈"
+            error ? t.detail.reportFailed : t.detail.reportOk,
+            error ? t.login.failedHint : t.detail.reportOkHint
           );
         },
       })),
-      { text: "取消", style: "cancel" as const },
+      { text: t.common.cancel, style: "cancel" as const },
     ]);
   }
 
   function deleteBookmark() {
-    Alert.alert("删除收藏", "删除后不可恢复，确定吗？", [
-      { text: "取消", style: "cancel" },
+    Alert.alert(t.detail.deleteTitle, t.detail.deleteConfirm, [
+      { text: t.common.cancel, style: "cancel" },
       {
-        text: "删除",
+        text: t.common.delete,
         style: "destructive",
         onPress: async () => {
           const { error } = await supabase
@@ -213,7 +214,7 @@ export default function BookmarkDetailScreen() {
             .delete()
             .eq("id", id);
           if (error) {
-            Alert.alert("删除失败", error.message);
+            Alert.alert(t.detail.deleteFailed, error.message);
           } else {
             router.back();
           }
@@ -225,7 +226,7 @@ export default function BookmarkDetailScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <Stack.Screen options={{ title: "收藏详情" }} />
+        <Stack.Screen options={{ title: t.detail.title }} />
         <ActivityIndicator />
       </View>
     );
@@ -234,9 +235,9 @@ export default function BookmarkDetailScreen() {
   if (missing || !bookmark) {
     return (
       <View style={styles.center}>
-        <Stack.Screen options={{ title: "收藏详情" }} />
+        <Stack.Screen options={{ title: t.detail.title }} />
         <Text style={{ color: colors.mutedForeground }}>
-          收藏不存在或不可见
+          {t.detail.notFound}
         </Text>
       </View>
     );
@@ -250,7 +251,7 @@ export default function BookmarkDetailScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={100}
     >
-      <Stack.Screen options={{ title: "收藏详情" }} />
+      <Stack.Screen options={{ title: t.detail.title }} />
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
@@ -258,7 +259,7 @@ export default function BookmarkDetailScreen() {
         {bookmark.removed_at ? (
           <View style={[styles.notice, { backgroundColor: colors.accent }]}>
             <Text style={{ color: colors.foreground, fontSize: 13 }}>
-              这条收藏因违规已被下架，仅你自己可见。
+              {t.detail.removedNotice}
             </Text>
           </View>
         ) : null}
@@ -285,7 +286,7 @@ export default function BookmarkDetailScreen() {
                 <Text
                   style={[styles.actionLink, { color: colors.mutedForeground }]}
                 >
-                  {bookmark.is_starred ? "已星标" : "星标"}
+                  {bookmark.is_starred ? t.detail.starred : t.detail.star}
                 </Text>
               </Pressable>
               <Pressable onPress={toggleRead} hitSlop={8} style={styles.ownerAction}>
@@ -303,7 +304,7 @@ export default function BookmarkDetailScreen() {
                 <Text
                   style={[styles.actionLink, { color: colors.mutedForeground }]}
                 >
-                  {bookmark.read_at ? "已读" : "标为已读"}
+                  {bookmark.read_at ? t.detail.read : t.detail.markRead}
                 </Text>
               </Pressable>
               <Pressable
@@ -319,13 +320,13 @@ export default function BookmarkDetailScreen() {
                 <Text
                   style={[styles.actionLink, { color: colors.mutedForeground }]}
                 >
-                  编辑
+                  {t.detail.edit}
                 </Text>
               </Pressable>
               <View style={{ flex: 1 }} />
               <Pressable onPress={deleteBookmark} hitSlop={8}>
                 <Text style={[styles.actionLink, { color: colors.destructive }]}>
-                  删除
+                  {t.common.delete}
                 </Text>
               </Pressable>
             </>
@@ -334,14 +335,14 @@ export default function BookmarkDetailScreen() {
               <Text
                 style={[styles.actionLink, { color: colors.mutedForeground }]}
               >
-                举报
+                {t.detail.report}
               </Text>
             </Pressable>
           )}
         </View>
 
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-          评论 {comments.length > 0 ? `(${comments.length})` : ""}
+          {t.detail.comments} {comments.length > 0 ? `()` : ""}
         </Text>
 
         {comments.map((c) => (
@@ -367,7 +368,7 @@ export default function BookmarkDetailScreen() {
                 />
               )}
               <Text style={[styles.commentAuthor, { color: colors.foreground }]}>
-                {c.author?.display_name ?? c.author?.username ?? "用户"}
+                {c.author?.display_name ?? c.author?.username ?? t.common.anonymous}
               </Text>
               <Text style={[styles.commentTime, { color: colors.mutedForeground }]}>
                 {timeAgo(c.created_at)}
@@ -375,7 +376,7 @@ export default function BookmarkDetailScreen() {
               {c.user_id === viewerId ? (
                 <Pressable onPress={() => deleteComment(c.id)} hitSlop={8}>
                   <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>
-                    删除
+                    {t.common.delete}
                   </Text>
                 </Pressable>
               ) : null}
@@ -387,7 +388,7 @@ export default function BookmarkDetailScreen() {
         ))}
         {comments.length === 0 ? (
           <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>
-            还没有评论，说点什么吧
+            {t.detail.noComments}
           </Text>
         ) : null}
       </ScrollView>
@@ -407,7 +408,7 @@ export default function BookmarkDetailScreen() {
               color: colors.foreground,
             },
           ]}
-          placeholder={viewerId ? "写下你的想法…" : "登录后参与评论"}
+          placeholder={viewerId ? t.detail.commentPlaceholder : t.detail.commentPlaceholderGuest}
           placeholderTextColor={colors.mutedForeground}
           value={draft}
           onChangeText={setDraft}
@@ -434,7 +435,7 @@ export default function BookmarkDetailScreen() {
               fontWeight: "600",
             }}
           >
-            发送
+            {t.detail.send}
           </Text>
         </Pressable>
       </View>

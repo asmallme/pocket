@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { Stack, useLocalSearchParams } from "expo-router";
@@ -38,8 +39,8 @@ export default function UserScreen() {
   if (!profile) {
     return (
       <View style={styles.center}>
-        <Stack.Screen options={{ title: "用户" }} />
-        <Text style={{ color: colors.mutedForeground }}>用户不存在</Text>
+        <Stack.Screen options={{ title: t.profile.notFound }} />
+        <Text style={{ color: colors.mutedForeground }}>{t.profile.notFound}</Text>
       </View>
     );
   }
@@ -53,7 +54,7 @@ export default function UserScreen() {
       <FeedList
         scope="user"
         userId={profile.id}
-        emptyText="TA 还没有公开的收藏"
+        emptyText={t.profile.emptyBookmarks}
       />
     </View>
   );

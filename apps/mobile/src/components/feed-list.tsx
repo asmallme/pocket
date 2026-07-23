@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import {
   useCallback,
   useEffect,
@@ -46,7 +47,7 @@ export function FeedList({
   tagSlug,
   userId,
   includePrivate,
-  emptyText = "还没有内容",
+  emptyText = t.common.empty,
   header,
   dockSpace = false,
   tabName,
@@ -178,7 +179,7 @@ export function FeedList({
       ListEmptyComponent={
         <View style={styles.center}>
           <Text style={{ color: colors.mutedForeground }}>
-            {error ? "加载失败，下拉重试" : emptyText}
+            {error ? t.common.retry : emptyText}
           </Text>
         </View>
       }

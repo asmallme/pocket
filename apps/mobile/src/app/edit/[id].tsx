@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -75,7 +76,7 @@ export default function EditBookmarkScreen() {
       .eq("id", id);
     if (error) {
       setSaving(false);
-      Alert.alert("保存失败", error.message);
+      Alert.alert(t.edit.failed, error.message);
       return;
     }
     await replaceBookmarkTags(id, tags).catch(() => {});
@@ -96,7 +97,7 @@ export default function EditBookmarkScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <Stack.Screen options={{ title: "编辑收藏" }} />
+        <Stack.Screen options={{ title: t.edit.title }} />
         <ActivityIndicator />
       </View>
     );
@@ -108,17 +109,17 @@ export default function EditBookmarkScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={100}
     >
-      <Stack.Screen options={{ title: "编辑收藏" }} />
+      <Stack.Screen options={{ title: t.edit.title }} />
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
       >
         <Text style={[styles.label, { color: colors.mutedForeground }]}>
-          标题
+          {t.edit.labelTitle}
         </Text>
         <TextInput
           style={[...inputStyle, styles.titleInput]}
-          placeholder="收藏标题"
+          placeholder={t.edit.titlePlaceholder}
           placeholderTextColor={colors.mutedForeground}
           value={title}
           onChangeText={setTitle}
@@ -126,11 +127,11 @@ export default function EditBookmarkScreen() {
         />
 
         <Text style={[styles.label, { color: colors.mutedForeground }]}>
-          推荐语 / 金句
+          {t.edit.labelNote}
         </Text>
         <TextInput
           style={[...inputStyle, styles.noteInput]}
-          placeholder="为什么值得收藏？（可选）"
+          placeholder={t.edit.notePlaceholder}
           placeholderTextColor={colors.mutedForeground}
           value={note}
           onChangeText={setNote}
@@ -138,11 +139,11 @@ export default function EditBookmarkScreen() {
         />
 
         <Text style={[styles.label, { color: colors.mutedForeground }]}>
-          标签
+          {t.edit.labelTags}
         </Text>
         <TextInput
           style={inputStyle}
-          placeholder="逗号分隔，最多 5 个"
+          placeholder={t.edit.tagsPlaceholder}
           placeholderTextColor={colors.mutedForeground}
           autoCapitalize="none"
           value={tagInput}
@@ -151,7 +152,7 @@ export default function EditBookmarkScreen() {
 
         <View style={styles.switchRow}>
           <Text style={{ color: colors.foreground, fontSize: 15 }}>
-            公开这条收藏
+            {t.save.isPublic}
           </Text>
           <Switch value={isPublic} onValueChange={setIsPublic} />
         </View>
@@ -172,7 +173,7 @@ export default function EditBookmarkScreen() {
                 fontWeight: "600",
               }}
             >
-              保存修改
+              {t.edit.submit}
             </Text>
           )}
         </PressableScale>

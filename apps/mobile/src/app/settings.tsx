@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
@@ -138,7 +139,7 @@ export default function SettingsScreen() {
       .eq("id", userId);
     setSaving(false);
     if (error) {
-      Alert.alert("保存失败", error.message);
+      Alert.alert(t.settings.saveFailed, error.message);
     } else {
       setDirty(false);
     }
@@ -154,24 +155,22 @@ export default function SettingsScreen() {
   }
 
   function deleteAccount() {
-    Alert.alert(
-      "注销账号",
-      "将永久删除你的账号和全部收藏、评论、点赞数据，不可恢复。确定继续吗？",
+    Alert.alert(t.settings.deleteTitle, t.settings.deleteBody,
       [
-        { text: "取消", style: "cancel" },
+        { text: t.common.cancel, style: "cancel" },
         {
-          text: "永久删除",
+          text: t.settings.deleteConfirm,
           style: "destructive",
           onPress: () => {
-            Alert.alert("最后确认", "真的要删除账号吗？此操作无法撤销。", [
-              { text: "取消", style: "cancel" },
+            Alert.alert(t.settings.deleteFinalTitle, t.settings.deleteFinalBody, [
+              { text: t.common.cancel, style: "cancel" },
               {
-                text: "删除",
+                text: t.common.delete,
                 style: "destructive",
                 onPress: async () => {
                   const { error } = await supabase.rpc("delete_account");
                   if (error) {
-                    Alert.alert("注销失败", error.message);
+                    Alert.alert(t.settings.deleteFailed, error.message);
                     return;
                   }
                   await signOut();
@@ -188,7 +187,7 @@ export default function SettingsScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <Stack.Screen options={{ title: "设置" }} />
+        <Stack.Screen options={{ title: t.settings.title }} />
         <ActivityIndicator />
       </View>
     );
@@ -206,13 +205,13 @@ export default function SettingsScreen() {
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
-      <Stack.Screen options={{ title: "设置" }} />
+      <Stack.Screen options={{ title: t.settings.title }} />
 
-      <Section title="个人资料">
+      <Section title={t.settings.sectionProfile}>
         <View style={styles.formArea}>
           <TextInput
             style={inputStyle}
-            placeholder="昵称"
+            placeholder={t.settings.displayName}
             placeholderTextColor={colors.mutedForeground}
             value={displayName}
             onChangeText={(v) => {
@@ -223,7 +222,7 @@ export default function SettingsScreen() {
           />
           <TextInput
             style={[...inputStyle, styles.bioInput]}
-            placeholder="一句话介绍自己"
+            placeholder={t.settings.bio}
             placeholderTextColor={colors.mutedForeground}
             value={bio}
             onChangeText={(v) => {
@@ -250,7 +249,7 @@ export default function SettingsScreen() {
                     fontWeight: "600",
                   }}
                 >
-                  保存资料
+                  {t.settings.saveProfile}
                 </Text>
               )}
             </PressableScale>
@@ -258,10 +257,10 @@ export default function SettingsScreen() {
         </View>
       </Section>
 
-      <Section title="偏好">
+      <Section title={t.settings.sectionPrefs}>
         <Row
           icon="moon"
-          label="安静模式"
+          label={t.settings.quietMode}
           last
           right={
             <Switch
@@ -275,25 +274,25 @@ export default function SettingsScreen() {
         />
       </Section>
 
-      <Section title="关于">
+      <Section title={t.settings.sectionAbout}>
         <Row
           icon="doc.text"
-          label="用户协议"
+          label={t.settings.terms}
           onPress={() => openWebPage("/terms")}
         />
         <Row
           icon="hand.raised"
-          label="隐私政策"
+          label={t.settings.privacy}
           onPress={() => openWebPage("/privacy")}
         />
         <Row
           icon="info.circle"
-          label="关于网兜"
+          label={t.settings.about}
           onPress={() => openWebPage("/about")}
         />
         <Row
           icon="number"
-          label="版本"
+          label={t.settings.version}
           last
           right={
             <Text style={{ color: colors.mutedForeground, fontSize: 14 }}>
@@ -303,15 +302,15 @@ export default function SettingsScreen() {
         />
       </Section>
 
-      <Section title="账号">
+      <Section title={t.settings.sectionAccount}>
         <Row
           icon="rectangle.portrait.and.arrow.right"
-          label="退出登录"
+          label={t.settings.signOut}
           onPress={() => void handleSignOut()}
         />
         <Row
           icon="trash"
-          label="注销账号"
+          label={t.settings.deleteTitle}
           destructive
           last
           onPress={deleteAccount}
@@ -319,7 +318,7 @@ export default function SettingsScreen() {
       </Section>
 
       <Text style={[styles.footer, { color: colors.mutedForeground }]}>
-        网兜 · 兜住全网的好内容
+        {t.settings.footer}
       </Text>
     </ScrollView>
   );

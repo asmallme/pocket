@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { memo, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
@@ -50,7 +51,7 @@ function BookmarkCardInner({
   }));
 
   const author = bookmark.author;
-  const name = author?.display_name ?? author?.username ?? "匿名";
+  const name = author?.display_name ?? author?.username ?? t.common.anonymous;
   const isAiSummary = !!bookmark.ai_summary;
   const summary = bookmark.ai_summary ?? bookmark.description;
   const domain = hostOf(bookmark.url);
@@ -107,7 +108,7 @@ function BookmarkCardInner({
     });
     setRepostPending(false);
     if (error) {
-      Alert.alert("转存失败", error.message);
+      Alert.alert(t.detail.repostFailed, error.message);
       return;
     }
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -161,7 +162,7 @@ function BookmarkCardInner({
               style={[styles.origin, { color: colors.mutedForeground }]}
               numberOfLines={1}
             >
-              转存自 @{bookmark.origin_author?.username ?? "（原收藏已删除）"}
+              {t.detail.repostedFrom(bookmark.origin_author?.username ?? t.detail.originDeleted)}
             </Text>
           ) : null}
         </View>
@@ -222,14 +223,14 @@ function BookmarkCardInner({
 
       {bookmark.tags && bookmark.tags.length > 0 ? (
         <View style={styles.tags}>
-          {bookmark.tags.map((t) => (
+          {bookmark.tags.map((tag) => (
             <Pressable
-              key={t.id}
-              onPress={() => router.push(`/tag/${t.slug}`)}
+              key={tag.id}
+              onPress={() => router.push(`/tag/${tag.slug}`)}
               style={[styles.tagChip, { backgroundColor: colors.muted }]}
             >
               <Text style={[styles.tagText, { color: colors.mutedForeground }]}>
-                #{t.name}
+                #{tag.name}
               </Text>
             </Pressable>
           ))}

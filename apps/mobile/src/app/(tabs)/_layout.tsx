@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import type { ComponentProps } from "react";
 import { StyleSheet, View } from "react-native";
 import { Tabs, useRouter } from "expo-router";
@@ -65,7 +66,7 @@ function Dock({ state, navigation }: DockProps) {
                     styles.saveButton,
                     { backgroundColor: colors.primary },
                   ]}
-                  accessibilityLabel="收藏链接"
+                  accessibilityLabel={t.tabs.saveAction}
                 >
                   <SymbolView
                     name="plus"
@@ -124,8 +125,8 @@ export default function TabLayout() {
         sceneStyle: { backgroundColor: colors.background },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: "首页" }} />
-      <Tabs.Screen name="me" options={{ title: "我的" }} />
+      <Tabs.Screen name="index" options={{ title: t.tabs.home }} />
+      <Tabs.Screen name="me" options={{ title: t.tabs.me }} />
     </Tabs>
   );
 }

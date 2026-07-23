@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Link, useFocusEffect } from "expo-router";
@@ -13,9 +14,9 @@ import { ScreenHeader } from "@/components/screen-header";
 import { PressableScale } from "@/components/pressable-scale";
 
 const FILTERS = [
-  { key: "all", label: "全部" },
-  { key: "unread", label: "稍后读" },
-  { key: "starred", label: "星标" },
+  { key: "all", label: t.me.filterAll },
+  { key: "unread", label: t.me.filterUnread },
+  { key: "starred", label: t.me.filterStarred },
 ] as const;
 
 type FilterKey = (typeof FILTERS)[number]["key"];
@@ -55,7 +56,7 @@ export default function MeScreen() {
   if (!session) {
     return (
       <View style={{ flex: 1 }}>
-        <ScreenHeader title="我的" />
+        <ScreenHeader title={t.me.title} />
         <View style={styles.center}>
           <View style={[styles.emptyBadge, { backgroundColor: colors.accent }]}>
             <SymbolView
@@ -65,7 +66,7 @@ export default function MeScreen() {
             />
           </View>
           <Text style={{ color: colors.mutedForeground, fontSize: 15 }}>
-            登录后管理你的收藏
+            {t.me.loginHint}
           </Text>
           <Link href="/login" asChild>
             <PressableScale
@@ -79,7 +80,7 @@ export default function MeScreen() {
                   fontWeight: "600",
                 }}
               >
-                登录 / 注册
+                {t.me.loginButton}
               </Text>
             </PressableScale>
           </Link>
@@ -91,7 +92,7 @@ export default function MeScreen() {
   return (
     <View style={{ flex: 1 }}>
       <ScreenHeader
-        title="我的"
+        title={t.me.title}
         right={
           <Link href="/settings" asChild>
             <PressableScale
@@ -154,10 +155,10 @@ export default function MeScreen() {
         }
         emptyText={
           filter === "unread"
-            ? "没有待读的收藏，全部读完了"
+            ? t.me.emptyUnread
             : filter === "starred"
-              ? "还没有星标收藏，在详情页点亮 ★"
-              : "你还没有收藏，去收藏第一条内容吧"
+              ? t.me.emptyStarred
+              : t.me.emptyAll
         }
       />
     </View>
