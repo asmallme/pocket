@@ -35,6 +35,10 @@ interface Props {
   dockSpace?: boolean;
   /** 所属 tab 的路由名：重复点按该 tab 时列表滚回顶部 */
   tabName?: string;
+  /** 仅未读（scope=user 本人） */
+  unreadOnly?: boolean;
+  /** 仅星标（scope=user 本人） */
+  starredOnly?: boolean;
 }
 
 export function FeedList({
@@ -46,6 +50,8 @@ export function FeedList({
   header,
   dockSpace = false,
   tabName,
+  unreadOnly,
+  starredOnly,
 }: Props) {
   const colors = useTheme();
   const { session, ready } = useAuth();
@@ -80,6 +86,8 @@ export function FeedList({
           userId,
           viewerId,
           includePrivate,
+          unreadOnly,
+          starredOnly,
           cursor: mode === "more" ? afterCursor : null,
         });
         if (gen !== generation.current) return;
@@ -100,7 +108,7 @@ export function FeedList({
         if (gen === generation.current) setError(true);
       }
     },
-    [scope, tagSlug, userId, viewerId, includePrivate]
+    [scope, tagSlug, userId, viewerId, includePrivate, unreadOnly, starredOnly]
   );
 
   useEffect(() => {

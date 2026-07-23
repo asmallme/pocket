@@ -12,7 +12,14 @@ import {
   View,
 } from "react-native";
 import { Image } from "expo-image";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import {
+  Stack,
+  useFocusEffect,
+  useLocalSearchParams,
+  useRouter,
+} from "expo-router";
+import * as Haptics from "expo-haptics";
+import { SymbolView } from "expo-symbols";
 import type { BookmarkWithAuthor, Comment } from "@pocket/shared";
 import { BOOKMARK_SELECT, fetchTagsForBookmarks } from "@pocket/shared/feed";
 import { Radius, Spacing } from "@/constants/theme";
@@ -97,6 +104,37 @@ export default function BookmarkDetailScreen() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // 从编辑页返回时刷新
+  useFocusEffect(
+    useCallback(() => {
+      if (!loading) void load();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [load])
+  );
+
+  async function toggleStar() {
+    if (!bookmark) return;
+    const next = !bookmark.is_starred;
+    setBookmark({ ...bookmark, is_starred: next });
+    if (next) void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const { error } = await supabase
+      .from("bookmarks")
+      .update({ is_starred: next })
+      .eq("id", id);
+    if (error) setBookmark({ ...bookmark, is_starred: !next });
+  }
+
+  async function toggleRead() {
+    if (!bookmark) return;
+    const next = bookmark.read_at ? null : new Date().toISOString();
+    setBookmark({ ...bookmark, read_at: next });
+    const { error } = await supabase
+      .from("bookmarks")
+      .update({ read_at: next })
+      .eq("id", id);
+    if (error) setBookmark({ ...bookmark, read_at: bookmark.read_at });
+  }
 
   async function postComment() {
     if (!viewerId) {
@@ -233,11 +271,64 @@ export default function BookmarkDetailScreen() {
 
         <View style={styles.actionsRow}>
           {isOwner ? (
-            <Pressable onPress={deleteBookmark} hitSlop={8}>
-              <Text style={[styles.actionLink, { color: colors.destructive }]}>
-                删除
-              </Text>
-            </Pressable>
+            <>
+              <Pressable onPress={toggleStar} hitSlop={8} style={styles.ownerAction}>
+                <SymbolView
+                  name={bookmark.is_starred ? "star.fill" : "star"}
+                  tintColor={
+                    bookmark.is_starred
+                      ? colors.accentStrong
+                      : colors.mutedForeground
+                  }
+                  size={15}
+                />
+                <Text
+                  style={[styles.actionLink, { color: colors.mutedForeground }]}
+                >
+                  {bookmark.is_starred ? "已星标" : "星标"}
+                </Text>
+              </Pressable>
+              <Pressable onPress={toggleRead} hitSlop={8} style={styles.ownerAction}>
+                <SymbolView
+                  name={
+                    bookmark.read_at ? "checkmark.circle.fill" : "circle"
+                  }
+                  tintColor={
+                    bookmark.read_at
+                      ? colors.accentStrong
+                      : colors.mutedForeground
+                  }
+                  size={15}
+                />
+                <Text
+                  style={[styles.actionLink, { color: colors.mutedForeground }]}
+                >
+                  {bookmark.read_at ? "已读" : "标为已读"}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => router.push(`/edit/${id}`)}
+                hitSlop={8}
+                style={styles.ownerAction}
+              >
+                <SymbolView
+                  name="pencil"
+                  tintColor={colors.mutedForeground}
+                  size={15}
+                />
+                <Text
+                  style={[styles.actionLink, { color: colors.mutedForeground }]}
+                >
+                  编辑
+                </Text>
+              </Pressable>
+              <View style={{ flex: 1 }} />
+              <Pressable onPress={deleteBookmark} hitSlop={8}>
+                <Text style={[styles.actionLink, { color: colors.destructive }]}>
+                  删除
+                </Text>
+              </Pressable>
+            </>
           ) : (
             <Pressable onPress={report} hitSlop={8}>
               <Text
@@ -368,8 +459,15 @@ const styles = StyleSheet.create({
   },
   actionsRow: {
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "flex-end",
     gap: Spacing.lg,
+    paddingHorizontal: Spacing.xs,
+  },
+  ownerAction: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   actionLink: {
     fontSize: 13,

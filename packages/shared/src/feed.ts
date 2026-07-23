@@ -21,6 +21,10 @@ export interface FeedOptions {
   viewerId?: string | null;
   includePrivate?: boolean;
   tagSlug?: string | null;
+  /** 仅未读（read_at 为空），限 scope=user 本人视角 */
+  unreadOnly?: boolean;
+  /** 仅星标，限 scope=user 本人视角 */
+  starredOnly?: boolean;
 }
 
 export async function fetchTagsForBookmarks(
@@ -125,6 +129,8 @@ export async function fetchFeed(
     if (!options.includePrivate) {
       query = query.eq("is_public", true);
     }
+    if (options.unreadOnly) query = query.is("read_at", null);
+    if (options.starredOnly) query = query.eq("is_starred", true);
   } else if (options.scope === "global") {
     query = query.eq("is_public", true).is("removed_at", null);
   }

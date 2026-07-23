@@ -86,6 +86,12 @@ function toTagSlug(name: string): string {
   return slug || "tag";
 }
 
+/** 编辑收藏时整体替换标签：清空旧关联后重建 */
+export async function replaceBookmarkTags(bookmarkId: string, names: string[]) {
+  await supabase.from("bookmark_tags").delete().eq("bookmark_id", bookmarkId);
+  await attachTagsToBookmark(bookmarkId, names);
+}
+
 async function attachTagsToBookmark(bookmarkId: string, names: string[]) {
   const unique = [
     ...new Set(names.map((n) => n.trim().slice(0, 30)).filter(Boolean)),

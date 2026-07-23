@@ -96,6 +96,14 @@ export default function RootLayout() {
             headerLeft: () => <ModalClose />,
           }}
         />
+        <Stack.Screen
+          name="edit/[id]"
+          options={{
+            title: "编辑收藏",
+            presentation: "modal",
+            headerLeft: () => <ModalClose />,
+          }}
+        />
       </Stack>
     </AuthProvider>
   );

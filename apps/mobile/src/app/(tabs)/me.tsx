@@ -12,10 +12,19 @@ import { ProfileHeader } from "@/components/profile-header";
 import { ScreenHeader } from "@/components/screen-header";
 import { PressableScale } from "@/components/pressable-scale";
 
+const FILTERS = [
+  { key: "all", label: "全部" },
+  { key: "unread", label: "稍后读" },
+  { key: "starred", label: "星标" },
+] as const;
+
+type FilterKey = (typeof FILTERS)[number]["key"];
+
 export default function MeScreen() {
   const colors = useTheme();
   const { session, ready } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [filter, setFilter] = useState<FilterKey>("all");
 
   const loadProfile = useCallback(async () => {
     if (!session) {
@@ -99,14 +108,57 @@ export default function MeScreen() {
           </Link>
         }
       />
+      <View style={styles.filterRow}>
+        {FILTERS.map((f) => {
+          const active = filter === f.key;
+          return (
+            <PressableScale
+              key={f.key}
+              scaleTo={0.94}
+              onPress={() => setFilter(f.key)}
+              style={[
+                styles.filterChip,
+                {
+                  backgroundColor: active ? colors.primary : colors.muted,
+                },
+              ]}
+            >
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: active ? "600" : "500",
+                  color: active
+                    ? colors.primaryForeground
+                    : colors.mutedForeground,
+                }}
+              >
+                {f.label}
+              </Text>
+            </PressableScale>
+          );
+        })}
+      </View>
       <FeedList
+        key={filter}
         scope="user"
         userId={session.user.id}
         includePrivate
+        unreadOnly={filter === "unread"}
+        starredOnly={filter === "starred"}
         dockSpace
         tabName="me"
-        header={profile ? <ProfileHeader profile={profile} /> : undefined}
-        emptyText="你还没有收藏，去收藏第一条内容吧"
+        header={
+          filter === "all" && profile ? (
+            <ProfileHeader profile={profile} />
+          ) : undefined
+        }
+        emptyText={
+          filter === "unread"
+            ? "没有待读的收藏，全部读完了"
+            : filter === "starred"
+              ? "还没有星标收藏，在详情页点亮 ★"
+              : "你还没有收藏，去收藏第一条内容吧"
+        }
       />
     </View>
   );
@@ -142,5 +194,16 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
+  },
+  filterRow: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xs,
+  },
+  filterChip: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm - 1,
+    borderRadius: 999,
   },
 });

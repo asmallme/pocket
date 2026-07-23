@@ -57,6 +57,14 @@ export default function SaveScreen() {
   const [tagInput, setTagInput] = useState("");
   const [isPublic, setIsPublic] = useState(true);
   const [saving, setSaving] = useState(false);
+  // 剪贴板里有链接时给出一键填入提示（hasUrlAsync 不读内容，不触发系统粘贴弹窗）
+  const [clipboardHasUrl, setClipboardHasUrl] = useState(false);
+
+  useEffect(() => {
+    Clipboard.hasUrlAsync()
+      .then(setClipboardHasUrl)
+      .catch(() => setClipboardHasUrl(false));
+  }, []);
 
   const applyUrl = useCallback(async (candidate: string) => {
     const normalized = normalizeUrl(candidate);
@@ -177,6 +185,20 @@ export default function SaveScreen() {
           </Pressable>
         </View>
 
+        {clipboardHasUrl && !url ? (
+          <Pressable
+            onPress={() => {
+              setClipboardHasUrl(false);
+              void pasteFromClipboard();
+            }}
+            style={[styles.clipboardHint, { backgroundColor: colors.accent }]}
+          >
+            <Text style={{ color: colors.foreground, fontSize: 13 }}>
+              📎 检测到剪贴板里有链接，点击一键填入
+            </Text>
+          </Pressable>
+        ) : null}
+
         {unfurling ? (
           <View style={[styles.preview, { borderColor: colors.border }]}>
             <ActivityIndicator />
@@ -287,6 +309,11 @@ const styles = StyleSheet.create({
   container: {
     padding: Spacing.lg,
     gap: Spacing.md,
+  },
+  clipboardHint: {
+    borderRadius: Radius,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
   },
   urlRow: {
     flexDirection: "row",
