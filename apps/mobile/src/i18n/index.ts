@@ -46,6 +46,8 @@ const zh = {
     emptyAll: "你还没有收藏，去收藏第一条内容吧",
     emptyUnread: "没有待读的收藏，全部读完了",
     emptyStarred: "还没有星标收藏，在详情页点亮 ★",
+    searchPlaceholder: "搜索我的收藏",
+    emptySearch: "没有匹配的收藏",
   },
   login: {
     slogan: "收藏你在全网看到的好内容",
@@ -139,6 +141,20 @@ const zh = {
   },
   tag: {
     empty: "这个标签下还没有收藏",
+    subscribe: "订阅",
+    subscribed: "已订阅",
+  },
+  connections: {
+    followers: "粉丝",
+    following: "关注",
+    emptyFollowers: "还没有粉丝",
+    emptyFollowing: "还没有关注任何人",
+  },
+  serendipity: {
+    title: "随便看看",
+    unread: "随便读一篇未读",
+    revisit: "重温一篇两周前的旧文",
+    empty: "没有符合条件的收藏",
   },
   settings: {
     title: "设置",
@@ -146,6 +162,8 @@ const zh = {
     displayName: "昵称",
     bio: "一句话介绍自己",
     saveProfile: "保存资料",
+    changeAvatar: "更换头像",
+    avatarUploadFailed: "头像上传失败",
     sectionPrefs: "偏好",
     quietMode: "安静模式",
     quietModeHint: "隐藏关注/粉丝等社交数字",
@@ -213,6 +231,8 @@ const en: Dict = {
     emptyAll: "No bookmarks yet — go save your first one",
     emptyUnread: "Nothing left to read. All caught up!",
     emptyStarred: "No starred bookmarks. Tap ★ on any detail page",
+    searchPlaceholder: "Search my bookmarks",
+    emptySearch: "No matching bookmarks",
   },
   login: {
     slogan: "Save the best of the web",
@@ -308,6 +328,20 @@ const en: Dict = {
   },
   tag: {
     empty: "No bookmarks under this tag yet",
+    subscribe: "Subscribe",
+    subscribed: "Subscribed",
+  },
+  connections: {
+    followers: "Followers",
+    following: "Following",
+    emptyFollowers: "No followers yet",
+    emptyFollowing: "Not following anyone yet",
+  },
+  serendipity: {
+    title: "Surprise Me",
+    unread: "A random unread bookmark",
+    revisit: "Revisit something from 2+ weeks ago",
+    empty: "No matching bookmarks",
   },
   settings: {
     title: "Settings",
@@ -315,6 +349,8 @@ const en: Dict = {
     displayName: "Display name",
     bio: "A one-line bio",
     saveProfile: "Save Profile",
+    changeAvatar: "Change avatar",
+    avatarUploadFailed: "Avatar upload failed",
     sectionPrefs: "Preferences",
     quietMode: "Quiet Mode",
     quietModeHint: "Hide follower counts and social numbers",

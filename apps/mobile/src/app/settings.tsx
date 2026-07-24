@@ -12,6 +12,8 @@ import {
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
+import * as ImagePicker from "expo-image-picker";
+import { Image } from "expo-image";
 import Constants from "expo-constants";
 import { SymbolView, type SymbolViewProps } from "expo-symbols";
 import { CardShadow, R, Spacing } from "@/constants/theme";
@@ -101,10 +103,52 @@ export default function SettingsScreen() {
 
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [quietMode, setQuietMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [dirty, setDirty] = useState(false);
+
+  async function changeAvatar() {
+    if (!userId || uploadingAvatar) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+    const asset = result.assets?.[0];
+    if (result.canceled || !asset) return;
+    setUploadingAvatar(true);
+    try {
+      const ext = asset.uri.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${userId}/avatar-${Date.now()}.${ext}`;
+      const res = await fetch(asset.uri);
+      const body = await res.arrayBuffer();
+      const { error: uploadError } = await supabase.storage
+        .from("media")
+        .upload(path, body, {
+          contentType: asset.mimeType ?? `image/${ext === "jpg" ? "jpeg" : ext}`,
+        });
+      if (uploadError) throw uploadError;
+      const url = supabase.storage.from("media").getPublicUrl(path).data
+        .publicUrl;
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: url })
+        .eq("id", userId);
+      if (updateError) throw updateError;
+      setAvatarUrl(url);
+    } catch (e) {
+      Alert.alert(
+        t.settings.avatarUploadFailed,
+        e instanceof Error ? e.message : undefined
+      );
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
 
   useEffect(() => {
     if (!userId) {
@@ -113,7 +157,7 @@ export default function SettingsScreen() {
     }
     void supabase
       .from("profiles")
-      .select("display_name, bio, quiet_mode")
+      .select("display_name, bio, quiet_mode, avatar_url")
       .eq("id", userId)
       .maybeSingle()
       .then(({ data }) => {
@@ -121,6 +165,7 @@ export default function SettingsScreen() {
           setDisplayName(data.display_name ?? "");
           setBio(data.bio ?? "");
           setQuietMode(data.quiet_mode ?? false);
+          setAvatarUrl(data.avatar_url ?? null);
         }
         setLoading(false);
       });
@@ -209,6 +254,30 @@ export default function SettingsScreen() {
 
       <Section title={t.settings.sectionProfile}>
         <View style={styles.formArea}>
+          <PressableScale
+            scaleTo={0.96}
+            onPress={changeAvatar}
+            style={styles.avatarRow}
+          >
+            {avatarUrl ? (
+              <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatar, { backgroundColor: colors.muted }]}>
+                <SymbolView
+                  name="person.fill"
+                  tintColor={colors.mutedForeground}
+                  size={24}
+                />
+              </View>
+            )}
+            {uploadingAvatar ? (
+              <ActivityIndicator />
+            ) : (
+              <Text style={{ color: colors.mutedForeground, fontSize: 14 }}>
+                {t.settings.changeAvatar}
+              </Text>
+            )}
+          </PressableScale>
           <TextInput
             style={inputStyle}
             placeholder={t.settings.displayName}
@@ -351,6 +420,18 @@ const styles = StyleSheet.create({
   formArea: {
     padding: Spacing.md,
     gap: Spacing.md,
+  },
+  avatarRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+  },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
   },
   input: {
     height: 46,

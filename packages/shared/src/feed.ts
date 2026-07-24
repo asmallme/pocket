@@ -25,6 +25,8 @@ export interface FeedOptions {
   unreadOnly?: boolean;
   /** 仅星标，限 scope=user 本人视角 */
   starredOnly?: boolean;
+  /** 标题/推荐语/描述关键词搜索，限 scope=user */
+  search?: string;
 }
 
 export async function fetchTagsForBookmarks(
@@ -131,6 +133,14 @@ export async function fetchFeed(
     }
     if (options.unreadOnly) query = query.is("read_at", null);
     if (options.starredOnly) query = query.eq("is_starred", true);
+    if (options.search?.trim()) {
+      const escaped = options.search.replace(/[%_,]/g, "");
+      if (escaped) {
+        query = query.or(
+          `title.ilike.%${escaped}%,note.ilike.%${escaped}%,description.ilike.%${escaped}%`
+        );
+      }
+    }
   } else if (options.scope === "global") {
     query = query.eq("is_public", true).is("removed_at", null);
   }

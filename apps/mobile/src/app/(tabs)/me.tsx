@@ -1,7 +1,7 @@
 import { t } from "@/i18n";
-import { useCallback, useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { Link, useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Alert, StyleSheet, Text, TextInput, View } from "react-native";
+import { Link, useFocusEffect, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import type { Profile } from "@pocket/shared";
 import { R, Spacing } from "@/constants/theme";
@@ -21,11 +21,74 @@ const FILTERS = [
 
 type FilterKey = (typeof FILTERS)[number]["key"];
 
+/** 随便看看：未读随机 / 重温两周前旧文（与 web /my serendipity 同规则） */
+async function pickRandomBookmark(
+  userId: string,
+  mode: "unread" | "revisit"
+): Promise<string | null> {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 14);
+
+  let countQuery = supabase
+    .from("bookmarks")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+  countQuery =
+    mode === "unread"
+      ? countQuery.is("read_at", null)
+      : countQuery.not("read_at", "is", null).lt("created_at", cutoff.toISOString());
+  const { count } = await countQuery;
+  if (!count) return null;
+
+  const offset = Math.floor(Math.random() * count);
+  let dataQuery = supabase.from("bookmarks").select("id").eq("user_id", userId);
+  dataQuery =
+    mode === "unread"
+      ? dataQuery.is("read_at", null)
+      : dataQuery.not("read_at", "is", null).lt("created_at", cutoff.toISOString());
+  const { data } = await dataQuery.range(offset, offset).maybeSingle();
+  return data?.id ?? null;
+}
+
 export default function MeScreen() {
   const colors = useTheme();
+  const router = useRouter();
   const { session, ready } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [filter, setFilter] = useState<FilterKey>("all");
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 300ms 防抖，避免每敲一个字都打一次接口
+  function onSearchChange(v: string) {
+    setSearchInput(v);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => setSearch(v), 300);
+  }
+
+  function serendipity() {
+    if (!session) return;
+    Alert.alert(t.serendipity.title, undefined, [
+      {
+        text: t.serendipity.unread,
+        onPress: async () => {
+          const id = await pickRandomBookmark(session.user.id, "unread");
+          if (id) router.push(`/b/${id}`);
+          else Alert.alert(t.serendipity.empty);
+        },
+      },
+      {
+        text: t.serendipity.revisit,
+        onPress: async () => {
+          const id = await pickRandomBookmark(session.user.id, "revisit");
+          if (id) router.push(`/b/${id}`);
+          else Alert.alert(t.serendipity.empty);
+        },
+      },
+      { text: t.common.cancel, style: "cancel" },
+    ]);
+  }
 
   const loadProfile = useCallback(async () => {
     if (!session) {
@@ -94,21 +157,54 @@ export default function MeScreen() {
       <ScreenHeader
         title={t.me.title}
         right={
-          <Link href="/settings" asChild>
+          <>
             <PressableScale
               scaleTo={0.88}
               hitSlop={8}
+              haptic
+              onPress={serendipity}
+              accessibilityLabel={t.serendipity.title}
               style={[styles.gearButton, { backgroundColor: colors.muted }]}
             >
               <SymbolView
-                name="gearshape"
+                name="die.face.5"
                 tintColor={colors.mutedForeground}
                 size={18}
               />
             </PressableScale>
-          </Link>
+            <Link href="/settings" asChild>
+              <PressableScale
+                scaleTo={0.88}
+                hitSlop={8}
+                style={[styles.gearButton, { backgroundColor: colors.muted }]}
+              >
+                <SymbolView
+                  name="gearshape"
+                  tintColor={colors.mutedForeground}
+                  size={18}
+                />
+              </PressableScale>
+            </Link>
+          </>
         }
       />
+      <View style={[styles.searchBox, { backgroundColor: colors.muted }]}>
+        <SymbolView
+          name="magnifyingglass"
+          tintColor={colors.mutedForeground}
+          size={15}
+        />
+        <TextInput
+          style={[styles.searchInput, { color: colors.foreground }]}
+          placeholder={t.me.searchPlaceholder}
+          placeholderTextColor={colors.mutedForeground}
+          value={searchInput}
+          onChangeText={onSearchChange}
+          autoCapitalize="none"
+          returnKeyType="search"
+          clearButtonMode="while-editing"
+        />
+      </View>
       <View style={styles.filterRow}>
         {FILTERS.map((f) => {
           const active = filter === f.key;
@@ -140,25 +236,28 @@ export default function MeScreen() {
         })}
       </View>
       <FeedList
-        key={filter}
+        key={`${filter}:${search}`}
         scope="user"
         userId={session.user.id}
         includePrivate
         unreadOnly={filter === "unread"}
         starredOnly={filter === "starred"}
+        search={search || undefined}
         dockSpace
         tabName="me"
         header={
-          filter === "all" && profile ? (
+          filter === "all" && !search && profile ? (
             <ProfileHeader profile={profile} />
           ) : undefined
         }
         emptyText={
-          filter === "unread"
-            ? t.me.emptyUnread
-            : filter === "starred"
-              ? t.me.emptyStarred
-              : t.me.emptyAll
+          search
+            ? t.me.emptySearch
+            : filter === "unread"
+              ? t.me.emptyUnread
+              : filter === "starred"
+                ? t.me.emptyStarred
+                : t.me.emptyAll
         }
       />
     </View>
@@ -195,6 +294,21 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
+  },
+  searchBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    height: 38,
+    borderRadius: R.md,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    height: "100%",
   },
   filterRow: {
     flexDirection: "row",

@@ -14,7 +14,7 @@
     "ios": {
       "icon": "./assets/images/icon.png",
       "bundleIdentifier": "app.wangdou.ios",
-      "buildNumber": "4",
+      "buildNumber": "5",
       "appleTeamId": "8396W8WXG4",
       "supportsTablet": false,
       "usesAppleSignIn": true,

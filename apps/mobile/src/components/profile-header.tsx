@@ -209,18 +209,34 @@ export function ProfileHeader({ profile }: { profile: Profile }) {
       ) : null}
       {!profile.quiet_mode && followerCount !== null ? (
         <View style={styles.statsRow}>
-          <Text style={[styles.statNum, { color: colors.foreground }]}>
-            {followerCount}
-            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
-              {" "}{t.profile.followers}
+          <PressableScale
+            scaleTo={0.95}
+            hitSlop={6}
+            onPress={() =>
+              router.push(`/u/${profile.username}/connections?tab=followers`)
+            }
+          >
+            <Text style={[styles.statNum, { color: colors.foreground }]}>
+              {followerCount}
+              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
+                {" "}{t.profile.followers}
+              </Text>
             </Text>
-          </Text>
-          <Text style={[styles.statNum, { color: colors.foreground }]}>
-            {followingCount}
-            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
-              {" "}{t.profile.followingCount}
+          </PressableScale>
+          <PressableScale
+            scaleTo={0.95}
+            hitSlop={6}
+            onPress={() =>
+              router.push(`/u/${profile.username}/connections?tab=following`)
+            }
+          >
+            <Text style={[styles.statNum, { color: colors.foreground }]}>
+              {followingCount}
+              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
+                {" "}{t.profile.followingCount}
+              </Text>
             </Text>
-          </Text>
+          </PressableScale>
         </View>
       ) : null}
     </View>

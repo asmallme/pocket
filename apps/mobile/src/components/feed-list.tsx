@@ -40,6 +40,8 @@ interface Props {
   unreadOnly?: boolean;
   /** 仅星标（scope=user 本人） */
   starredOnly?: boolean;
+  /** 关键词搜索（scope=user 本人） */
+  search?: string;
 }
 
 export function FeedList({
@@ -53,6 +55,7 @@ export function FeedList({
   tabName,
   unreadOnly,
   starredOnly,
+  search,
 }: Props) {
   const colors = useTheme();
   const { session, ready } = useAuth();
@@ -89,6 +92,7 @@ export function FeedList({
           includePrivate,
           unreadOnly,
           starredOnly,
+          search,
           cursor: mode === "more" ? afterCursor : null,
         });
         if (gen !== generation.current) return;
@@ -109,7 +113,7 @@ export function FeedList({
         if (gen === generation.current) setError(true);
       }
     },
-    [scope, tagSlug, userId, viewerId, includePrivate, unreadOnly, starredOnly]
+    [scope, tagSlug, userId, viewerId, includePrivate, unreadOnly, starredOnly, search]
   );
 
   useEffect(() => {
